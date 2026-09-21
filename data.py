@@ -129,6 +129,20 @@ class Evaluator:
                 out[i:i + self.batch] = self.model(x).argmax(1).cpu().numpy()
         return out
 
+    def predict_per_tile(self):
+        """타일마다 자기 채널 평균·표준편차로 정규화해서 추론.
+        논문 표 5·6의 '(b) 영상별(image-wise) RGB 평균과 표준편차' 기준선의 한 가지 해석."""
+        t = self.torch
+        N, _, H, W = self.imgs.shape
+        out = np.empty((N, H, W), np.uint8)
+        with t.inference_mode():
+            for i in range(0, N, self.batch):
+                x = self.imgs[i:i + self.batch].float()
+                m = x.mean(dim=(2, 3), keepdim=True)
+                s = x.std(dim=(2, 3), keepdim=True, unbiased=False).clamp_min(1e-6)
+                out[i:i + self.batch] = self.model(((x - m) / s).to(self.device)).argmax(1).cpu().numpy()
+        return out
+
 
 def confusion(pred, gt, n):
     v = gt != IGNORE
