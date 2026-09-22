@@ -167,7 +167,7 @@ def cmd_inspect(a):
         return
     img = _read_tif(pairs[0][0])
     print(f"이미지 {pairs[0][0].name}: shape={img.shape} dtype={img.dtype} "
-          f"min={img.min()} max={img.max()}")
+            f"min={img.min()} max={img.max()}")
     vals = {}
     for _, mp in pairs:
         u, c = np.unique(_read_tif(mp)[0], return_counts=True)
@@ -195,7 +195,7 @@ def cmd_calibrate(a):
     model = _setup_model(a)
     test_frac = 0.0 if a.paper_mode else a.test_frac
     print(f"[mode] {'논문 방식 (분리 없음, 정상점 그대로, OR 종료)' if a.paper_mode else '우리 방식 (calib/test 분리)'}"
-          f" / 기준선={a.base_mode}")
+            f" / 기준선={a.base_mode}")
 
     per_class, test_union = {}, set()
     for c in a.targets:
@@ -213,7 +213,7 @@ def cmd_calibrate(a):
             return class_iou(ev.predict(theta), msks[idx], a.n_classes)[cc]
 
         res = rsm_search(objective, theta0, a.rel_broad, a.n_broad, a.rel_local, a.n_local,
-                         a.max_evals, a.eps_best, a.eps_pred, a.seed, paper_mode=a.paper_mode)
+                            a.max_evals, a.eps_best, a.eps_pred, a.seed, paper_mode=a.paper_mode)
         delta = res["iou_best"] - base_iou
         print(f"\n[class {c}] base={base_iou:.2f} best={res['iou_best']:.2f} delta={delta:+.2f}")
         print("[theta_best]", _fmt(res["theta_best"]))
@@ -258,9 +258,9 @@ def cmd_calibrate(a):
     table = _report(msks, splits, cols, a.n_classes, names, list(per_class), out, "iou_table.csv")
 
     json.dump(_json(dict(args=vars(a), paper_mode=a.paper_mode, base_mode=a.base_mode,
-                         fusion_order=order, classes=per_class,
-                         iou={s: dict(t) for s, t in table.items()})),
-              open(out / "result.json", "w"), indent=2, ensure_ascii=False)
+                            fusion_order=order, classes=per_class,
+                            iou={s: dict(t) for s, t in table.items()})),
+                open(out / "result.json", "w"), indent=2, ensure_ascii=False)
     print(f"\n저장: {out}/result.json, trials_c*.csv, iou_table.csv")
 
 
@@ -296,8 +296,8 @@ def cmd_apply(a):
         splits[f"tiles(c{c})"] = _tiles_with(msks, c)
     table = _report(msks, splits, cols, a.n_classes, names, a.targets, out, "iou_table.csv")
     json.dump(_json(dict(args=vars(a), theta_base=theta0, theta_applied=used, fusion_order=order,
-                         iou={s: dict(t) for s, t in table.items()})),
-              open(out / "apply.json", "w"), indent=2, ensure_ascii=False)
+                            iou={s: dict(t) for s, t in table.items()})),
+                open(out / "apply.json", "w"), indent=2, ensure_ascii=False)
     print(f"\n저장: {out}/apply.json, iou_table.csv")
 
 
@@ -332,8 +332,8 @@ def cmd_transfer(a):
         splits[f"tiles(c{c})"] = _tiles_with(msks, c)
     table = _report(msks, splits, cols, a.n_classes, names, a.targets, out, "iou_table.csv")
     json.dump(_json(dict(source=a.source, classes=used, fusion_order=order,
-                         iou={s: dict(t) for s, t in table.items()})),
-              open(out / "transfer.json", "w"), indent=2, ensure_ascii=False)
+                            iou={s: dict(t) for s, t in table.items()})),
+                open(out / "transfer.json", "w"), indent=2, ensure_ascii=False)
     print(f"\n저장: {out}/transfer.json, iou_table.csv")
 
 
@@ -396,7 +396,7 @@ def main():
 
     a = p.parse_args()
     {"synthetic": cmd_synthetic, "inspect": cmd_inspect, "calibrate": cmd_calibrate,
-     "apply": cmd_apply, "transfer": cmd_transfer}[a.cmd](a)
+        "apply": cmd_apply, "transfer": cmd_transfer}[a.cmd](a)
 
 
 if __name__ == "__main__":

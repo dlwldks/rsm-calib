@@ -15,8 +15,8 @@ def lhs(n, d, rng):
 
 
 def rsm_search(objective, theta0, rel_broad=0.10, n_broad=30, rel_local=0.03,
-               n_local=6, max_evals=60, eps_best=0.1, eps_pred=1.0, seed=0,
-               paper_mode=False, verbose=True):
+                n_local=6, max_evals=60, eps_best=0.1, eps_pred=1.0, seed=0,
+                paper_mode=False, verbose=True):
     """
     objective(theta) -> IoU(%).  theta = [R_mean, G_mean, B_mean, R_std, G_std, B_std]
 
@@ -24,11 +24,11 @@ def rsm_search(objective, theta0, rel_broad=0.10, n_broad=30, rel_local=0.03,
     2단계: 2차 회귀 -> 다음 탐색 중심 결정 -> 그 주변 ±rel_local에서 n_local번 추가 샘플 -> 재피팅
 
     paper_mode=False (기본, 우리 방식)
-      - 다음 중심: 정상점이 탐색 범위 안의 극대점일 때만 사용, 아니면 범위 내 곡면 최댓값
-      - 종료: (best 개선폭 <= eps_best) AND (|실제 IoU - 예측 IoU| <= eps_pred)
+        - 다음 중심: 정상점이 탐색 범위 안의 극대점일 때만 사용, 아니면 범위 내 곡면 최댓값
+        - 종료: (best 개선폭 <= eps_best) AND (|실제 IoU - 예측 IoU| <= eps_pred)
     paper_mode=True (논문 Figure 1 그대로)
-      - 다음 중심: 정상점(grad f = 0)을 종류와 관계없이 그대로 사용 (범위 밖이면 경계로 자름)
-      - 종료: 조건 (e1) OR (e2)
+        - 다음 중심: 정상점(grad f = 0)을 종류와 관계없이 그대로 사용 (범위 밖이면 경계로 자름)
+        - 종료: 조건 (e1) OR (e2)
     공통: max_evals에 도달하면 종료
     """
     rng = np.random.default_rng(seed)
@@ -72,7 +72,7 @@ def rsm_search(objective, theta0, rel_broad=0.10, n_broad=30, rel_local=0.03,
                             best=best, eps1=e1, eps2=e2, r2=model.r2, how=how))
         if verbose:
             print(f"      -> pred={y_pred:.2f} actual={y_hat:.2f} "
-                  f"eps1={e1:.3f} eps2={e2:.3f} R2={model.r2:.3f}")
+                    f"eps1={e1:.3f} eps2={e2:.3f} R2={model.r2:.3f}")
         if paper_mode:
             stop = e1 <= eps_best or e2 <= eps_pred
         else:

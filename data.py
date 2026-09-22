@@ -75,7 +75,7 @@ def load_model(ckpt, encoder="resnet34", n_classes=15, arch="Unet"):
     import torch
 
     model = getattr(smp, arch)(encoder_name=encoder, encoder_weights=None,
-                               in_channels=3, classes=n_classes)
+                                in_channels=3, classes=n_classes)
     if str(ckpt).endswith(".safetensors"):
         from safetensors.torch import load_file
         sd = load_file(ckpt)
