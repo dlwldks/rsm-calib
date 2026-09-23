@@ -32,3 +32,4 @@ torch==2.5.1+cpu
 torchvision==0.20.1+cpu
 tqdm==4.70.1
 typing_extensions==4.16.0
+pandas==3.0.6
