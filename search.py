@@ -52,7 +52,7 @@ def neighborhood(center, adj, n, rng, include_center=True):
 
 # ------------------------------------------------------------------ 논문 방식
 def rsm_search_paper(objective, theta0, adj0=0.5, n0=30, adj_t=0.15, n_t=5,
-                     eps_stop=0.0, max_evals=60, seed=0, verbose=True):
+                     eps_stop=0.0, max_evals=80, r2_min=None, seed=0, verbose=True):
     """논문 Figure 1.
 
     (b1) Iteration_0 : C_0 = Neighborhood(theta0; ±adj0, n0)  -> 추론, 로그 S에 추가
@@ -63,10 +63,13 @@ def rsm_search_paper(objective, theta0, adj0=0.5, n0=30, adj_t=0.15, n_t=5,
     (e)  eps1 <= eps_stop  OR  eps2 <= eps_stop  이면 종료
     출력  theta_opt = S 전체에서 IoU 최대인 theta
 
+    r2_min (선택, 기본 꺼짐): 본문 3.3절 "R2 >= 0.9가 될 때까지 반복"을 반영하는 옵션.
+      켜면 (e) 조건을 만족해도 피팅 R2 < r2_min 이면 종료하지 않고 계속한다.
+
     논문에 없는 것 (우리가 정한 값):
       - adj는 상대 비율, 샘플은 LHS
-      - 정상점과 샘플을 물리적 범위(mean 0~255, std 1~255)로 자름
-      - max_evals 상한
+      - 정상점과 샘플을 물리적 범위(mean 0~255, std 1~255)로 자름 (잘렸으면 history에 clipped=True)
+      - max_evals 상한 (Figure 1 (h)가 약 70회까지 진행되어 기본 80)
     """
     rng = np.random.default_rng(seed)
     theta0 = np.asarray(theta0, float)
@@ -97,8 +100,9 @@ def rsm_search_paper(objective, theta0, adj0=0.5, n0=30, adj_t=0.15, n_t=5,
     while len(Y) < max_evals:
         t += 1
         model = QuadraticRSM().fit(np.array(X), np.array(Y))
-        theta_hat, kind = model.stationary_point()
-        theta_hat = physical_clip(theta_hat)
+        theta_raw, kind = model.stationary_point()
+        theta_hat = physical_clip(theta_raw)
+        clipped = bool(not np.allclose(theta_raw, theta_hat))
         y_pred = float(model.predict(theta_hat)[0])
         ys = run_batch(neighborhood(theta_hat, adj_t, n_t, rng), t)
         if not ys:
@@ -106,14 +110,19 @@ def rsm_search_paper(objective, theta0, adj0=0.5, n0=30, adj_t=0.15, n_t=5,
         best_t = max(ys)
         e1, e2 = best_t - best_prev, abs(best_t - y_pred)
         history.append(dict(iter=t, evals=len(Y), stationary_kind=kind, theta_hat=theta_hat,
+                            theta_hat_raw=theta_raw, clipped=clipped,
                             iou_pred=y_pred, iou_best_iter=best_t, eps1=e1, eps2=e2,
                             r2=model.r2, adj_r2=model.adj_r2))
         if verbose:
-            print(f"      -> [{kind}] pred={y_pred:.2f} iter_best={best_t:.2f} "
-                  f"eps1={e1:+.3f} eps2={e2:.3f} R2={model.r2:.3f}")
+            print(f"      -> [{kind}{', clipped' if clipped else ''}] pred={y_pred:.2f} "
+                  f"iter_best={best_t:.2f} eps1={e1:+.3f} eps2={e2:.3f} R2={model.r2:.3f}")
         if e1 <= eps_stop or e2 <= eps_stop:
-            stop_reason = "e1" if e1 <= eps_stop else "e2"
-            break
+            if r2_min is not None and model.r2 < r2_min:
+                if verbose:
+                    print(f"      -> (e) 만족했지만 R2 {model.r2:.3f} < {r2_min} 라서 계속")
+            else:
+                stop_reason = "e1" if e1 <= eps_stop else "e2"
+                break
         best_prev = best_t
 
     final = QuadraticRSM().fit(np.array(X), np.array(Y))
@@ -123,8 +132,8 @@ def rsm_search_paper(objective, theta0, adj0=0.5, n0=30, adj_t=0.15, n_t=5,
                 X=np.array(X), Y=np.array(Y), iteration=np.array(IT),
                 rsm=final.summary(), history=history, bounds=physical_bounds(d),
                 paper_mode=True, stop_reason=stop_reason,
-                settings=dict(adj0=adj0, n0=n0, adj_t=adj_t, n_t=n_t,
-                              eps_stop=eps_stop, max_evals=max_evals, seed=seed))
+                settings=dict(adj0=adj0, n0=n0, adj_t=adj_t, n_t=n_t, eps_stop=eps_stop,
+                              max_evals=max_evals, r2_min=r2_min, seed=seed))
 
 
 # ------------------------------------------------------------------ 우리 방식
@@ -191,16 +200,18 @@ def rsm_search_ours(objective, theta0, rel_broad=0.10, n_broad=30, rel_local=0.0
 
 
 def rsm_search(objective, theta0, paper_mode=False, rel_broad=None, n_broad=30,
-               rel_local=None, n_local=None, max_evals=60, eps_best=0.1, eps_pred=1.0,
-               eps_stop=0.0, seed=0, verbose=True):
-    """모드별 기본값: 논문 adj0=0.5, adj_t=0.15, n_t=5 / 우리 ±0.10, ±0.03, 6."""
+               rel_local=None, n_local=None, max_evals=None, eps_best=0.1, eps_pred=1.0,
+               eps_stop=0.0, r2_min=None, seed=0, verbose=True):
+    """모드별 기본값: 논문 adj0=0.5, adj_t=0.15, n_t=5, 상한 80 / 우리 ±0.10, ±0.03, 6, 상한 60."""
+    if max_evals is None:
+        max_evals = 80 if paper_mode else 60
     if paper_mode:
         return rsm_search_paper(
             objective, theta0,
             adj0=0.5 if rel_broad is None else rel_broad, n0=n_broad,
             adj_t=0.15 if rel_local is None else rel_local,
             n_t=5 if n_local is None else n_local,
-            eps_stop=eps_stop, max_evals=max_evals, seed=seed, verbose=verbose)
+            eps_stop=eps_stop, max_evals=max_evals, r2_min=r2_min, seed=seed, verbose=verbose)
     return rsm_search_ours(
         objective, theta0,
         rel_broad=0.10 if rel_broad is None else rel_broad, n_broad=n_broad,

@@ -12,7 +12,7 @@ Moon & Cho (2026), *Remote Sensing* 18:205 재현용.
 | `search.py` | 탐색. `rsm_search_paper`(논문 Figure 1) / `rsm_search_ours`(우리 변형) / `broad_sweep`(1단계 폭 비교) |
 | `data.py` | TIF 로딩, 라벨 매핑, smp U-Net 로딩, 추론/IoU, decision fusion |
 | `run.py` | CLI: `synthetic` / `inspect` / `calibrate` / `broad` / `apply` / `transfer` |
-| `analysis/order_compare.py` | `trials_c*.csv`로 1~3차 반응면 모델 비교 (추론 불필요) |
+| `analysis/order_compare.py` | trials csv로 1~4차 반응면 모델 비교 (추론 불필요) |
 | `labelmap_19.json` | FLAIR 마스크 값(1~19) → 모델 출력 인덱스(19채널) |
 
 ## 설치
@@ -35,7 +35,7 @@ GPU 컴퓨터에서는 `torch`, `torchvision` 두 줄을 빼고, CUDA 버전에 
 | 종료 | ε1 ≤ ε_stop **OR** ε2 ≤ ε_stop (ε_stop=0) | ε1 ≤ 0.1 **AND** ε2 ≤ 1.0 |
 | calib/test 분리 | 없음 | 70/30 |
 
-두 모드 공통: `--max-evals`(기본 60)에서 종료. 모든 폭은 `--adj0 / --adj-t / --n0 / --n-t / --eps-stop`으로 바꿀 수 있다.
+`--max-evals`(논문 모드 80, 우리 모드 60)에서 종료. 모든 폭은 `--adj0 / --adj-t / --n0 / --n-t / --eps-stop`으로 바꿀 수 있다.
 
 ## 순서
 
@@ -63,6 +63,13 @@ python run.py calibrate --img-dir <DIR> --msk-dir <DIR> --checkpoint <CKPT> --n-
 ```
 출력: `result.json`(θ, 비율, RSM 통계, 회차별 ε1·ε2, 종료 사유), `trials_c*.csv`(모든 추론 기록 + 회차 번호), `iou_table.csv`.
 
+**3-1. 논문 E2 조건 (toy test 50타일 전부로 보정)**
+```bash
+python run.py calibrate --img-dir <DIR> --msk-dir <DIR> --checkpoint <CKPT> --n-classes 19 ^
+  --label-map labelmap_19.json --targets 5 --paper-mode --base-mode per-tile ^
+  --include test --calib-tiles all --out out_e2_test50
+```
+
 **4. 차수 비교**
 ```bash
 python analysis/order_compare.py out_e2_fig1/trials_c5.csv
@@ -80,4 +87,4 @@ python run.py apply ... --encoder mit_b5 --theta-from out_e2_fig1/result.json --
 - Neighborhood 샘플은 **LHS**, seed 0.
 - 정상점과 샘플은 **물리적 범위**(mean 0~255, std 1~255)로 자른다. 경계 없는 탐색에서 std ≤ 0을 막기 위한 장치.
 - adj_t는 0.15 고정 (논문은 0.1–0.2 범위라고만 씀).
-- `--max-evals` 60 상한 (논문 본문: 60회 이내).
+- `--max-evals` 80 상한 (Figure 1 (h)가 약 70회까지 진행). 본문의 R² 조건은 `--r2-min 0.9`로 켤 수 있음 (기본 꺼짐).

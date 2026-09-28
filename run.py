@@ -51,7 +51,8 @@ def _fmt(theta):
 def _search_kwargs(a):
     return dict(paper_mode=a.paper_mode, rel_broad=a.rel_broad, n_broad=a.n_broad,
                 rel_local=a.rel_local, n_local=a.n_local, max_evals=a.max_evals,
-                eps_best=a.eps_best, eps_pred=a.eps_pred, eps_stop=a.eps_stop, seed=a.seed)
+                eps_best=a.eps_best, eps_pred=a.eps_pred, eps_stop=a.eps_stop,
+                r2_min=a.r2_min, seed=a.seed)
 
 
 def _mode_str(a):
@@ -91,6 +92,12 @@ def _load(a):
     pairs = pair_files(a.img_dir, a.msk_dir, a.img_glob, a.msk_glob)
     if not pairs:
         raise SystemExit("IMG/MSK 쌍을 못 찾음. --img-glob/--msk-glob 확인")
+    if a.include:
+        pairs = [p for p in pairs if a.include in str(p[1].parent)]
+    if a.exclude:
+        pairs = [p for p in pairs if not any(x in p[1].stem for x in a.exclude)]
+    if not pairs:
+        raise SystemExit("--include/--exclude 적용 후 남은 타일이 없음")
     if a.limit:
         pairs = pairs[: a.limit]
     imgs, msks = load_tiles(pairs, build_lut(a.label_map, a.n_classes), a.bands)
@@ -115,9 +122,10 @@ def _tiles_with(msks, c):
     return np.where([(m == c).any() for m in msks])[0]
 
 
-def _split(msks, target, test_frac, seed):
-    """타깃 클래스가 있는 타일만 골라 calib/test로 분리. test_frac=0이면 전부 calib (논문 방식)."""
-    idx = _tiles_with(msks, target)
+def _split(msks, target, test_frac, seed, calib_tiles="target"):
+    """calib_tiles=target: 타깃 클래스가 있는 타일만 / all: 전체 타일 (논문 E2는 47타일 전부).
+    test_frac>0이면 그 비율만큼 test로 분리. test_frac=0이면 전부 calib (논문 방식)."""
+    idx = _tiles_with(msks, target) if calib_tiles == "target" else np.arange(len(msks))
     np.random.default_rng(seed).shuffle(idx)
     n_test = int(round(len(idx) * test_frac))
     return np.sort(idx[n_test:]), np.sort(idx[:n_test])
@@ -227,12 +235,12 @@ def cmd_calibrate(a):
     imgs, msks = _load(a)
     model = _setup_model(a)
     test_frac = 0.0 if a.paper_mode else a.test_frac
-    print(f"[mode] {_mode_str(a)} / 기준선={a.base_mode} / "
+    print(f"[mode] {_mode_str(a)} / 기준선={a.base_mode} / 보정 타일={a.calib_tiles} / "
           f"{'calib/test 분리 없음' if test_frac == 0 else f'test {test_frac:.0%} 분리'}")
 
     per_class, test_union = {}, set()
     for c in a.targets:
-        calib, test = _split(msks, c, test_frac, a.seed)
+        calib, test = _split(msks, c, test_frac, a.seed, a.calib_tiles)
         print(f"\n##### 클래스 {c} ({_cname(names, c)}): calib={len(calib)} test={len(test)}")
         if len(calib) < 5:
             print("  -> 대상 타일이 5개 미만이라 건너뜀")
@@ -447,7 +455,9 @@ def _add_search_args(p):
                    help="2단계 폭 (상대 비율). 기본: 논문 0.15 / 우리 0.03")
     p.add_argument("--n-local", "--n-t", type=int, default=None,
                    help="회차당 추론 수. 기본: 논문 5 / 우리 6(+정상점 1)")
-    p.add_argument("--max-evals", type=int, default=60)
+    p.add_argument("--max-evals", type=int, default=None, help="추론 상한. 기본: 논문 80 / 우리 60")
+    p.add_argument("--r2-min", type=float, default=None,
+                   help="논문 모드: (e)를 만족해도 R2가 이 값 미만이면 계속 (본문 3.3절, 기본 꺼짐)")
     p.add_argument("--eps-stop", type=float, default=0.0, help="논문 모드 종료 임계값 (Figure 1: ≈0)")
     p.add_argument("--eps-best", type=float, default=0.1, help="우리 모드 종료 임계값 1")
     p.add_argument("--eps-pred", type=float, default=1.0, help="우리 모드 종료 임계값 2")
@@ -475,6 +485,8 @@ def main():
     common.add_argument("--label-map")
     common.add_argument("--class-names")
     common.add_argument("--limit", type=int)
+    common.add_argument("--include", help="마스크 경로(폴더)에 이 문자열이 있는 타일만 사용. 예: test")
+    common.add_argument("--exclude", nargs="+", help="파일명에 이 문자열이 있는 타일 제외 (오라벨 타일 등)")
     common.add_argument("--batch", type=int, default=8)
     common.add_argument("--device", default="cpu")
     common.add_argument("--threads", type=int)
@@ -488,6 +500,8 @@ def main():
     c.add_argument("--targets", "--target", type=int, nargs="+", required=True, help="모델 클래스 인덱스 (여러 개 가능)")
     c.add_argument("--out", default="out")
     c.add_argument("--test-frac", type=float, default=0.3)
+    c.add_argument("--calib-tiles", choices=["target", "all"], default="target",
+                   help="target: 대상 클래스가 있는 타일만 (Table 3 정의) / all: 전체 타일 (논문 E2)")
     _add_search_args(c)
 
     b = sub.add_parser("broad", parents=[common])
