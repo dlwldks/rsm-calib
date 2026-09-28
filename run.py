@@ -1,14 +1,20 @@
 """
 사용법
-  python run.py synthetic                       # 모델 없이 RSM 탐색 로직만 검증
+  python run.py synthetic [--paper-mode]         # 모델 없이 RSM 탐색 로직만 검증
   python run.py inspect   --img-dir .. --msk-dir .. [--checkpoint ..]
   python run.py calibrate --img-dir .. --msk-dir .. --checkpoint .. --targets 5 [6 9 ..] [--paper-mode] --out out_x
+  python run.py broad     --img-dir .. --msk-dir .. --checkpoint .. --targets 5 --adjs 0.1 0.25 0.5 --out out_broad
   python run.py apply     --img-dir .. --msk-dir .. --checkpoint .. [--encoder mit_b5] --theta-from out_x/result.json --targets 5 --out out_apply
   python run.py transfer  --img-dir .. --msk-dir .. --checkpoint .. --source out_d004/result.json --targets 5 --out out_d067
 
+탐색 모드
+  --paper-mode : 논문 Figure 1 그대로. 기본 adj0=0.5(n0=30) -> adj_t=0.15(n_t=5), 경계 없음,
+                 eps1(회차 best 개선폭) <= eps_stop OR eps2(|회차 best - 예측|) <= eps_stop 이면 종료
+  (기본)       : 우리 변형. theta0 ±10% 상자 고정 -> ±3% 7개씩, AND 종료
+
 기준선(--base-mode)
   pooled   : 대상 타일 전체를 합쳐 계산한 채널 평균·표준편차 하나로 정규화 (기본)
-  per-tile : 타일마다 자기 통계로 정규화 (논문 '영상별' 기준선의 다른 해석, 보고용 기준선에만 적용)
+  per-tile : 타일마다 자기 통계로 정규화 (논문 '영상별' 기준선의 한 해석, 보고용 기준선에만 적용)
   given    : --theta0 로 준 6개 값 (예: 모델 카드 권장값)
 """
 import argparse
@@ -18,8 +24,8 @@ from pathlib import Path
 
 import numpy as np
 
-from rsm import proportional_transfer
-from search import NAMES, rsm_search
+from rsm import n_min, proportional_transfer, quad_features
+from search import NAMES, broad_sweep, rsm_search
 
 
 def _json(o):
@@ -33,11 +39,28 @@ def _json(o):
         return None if np.isnan(o) else float(o)
     if isinstance(o, np.integer):
         return int(o)
+    if isinstance(o, np.bool_):
+        return bool(o)
     return o
 
 
 def _fmt(theta):
     return ", ".join(f"{n}={v:.2f}" for n, v in zip(NAMES, theta))
+
+
+def _search_kwargs(a):
+    return dict(paper_mode=a.paper_mode, rel_broad=a.rel_broad, n_broad=a.n_broad,
+                rel_local=a.rel_local, n_local=a.n_local, max_evals=a.max_evals,
+                eps_best=a.eps_best, eps_pred=a.eps_pred, eps_stop=a.eps_stop, seed=a.seed)
+
+
+def _mode_str(a):
+    if a.paper_mode:
+        return (f"논문 Figure 1 (adj0={0.5 if a.rel_broad is None else a.rel_broad}, "
+                f"adj_t={0.15 if a.rel_local is None else a.rel_local}, "
+                f"n_t={5 if a.n_local is None else a.n_local}, eps_stop={a.eps_stop}, 경계 없음)")
+    return (f"우리 변형 (±{0.10 if a.rel_broad is None else a.rel_broad} 상자, "
+            f"±{0.03 if a.rel_local is None else a.rel_local}, AND 종료)")
 
 
 # ------------------------------------------------------------------ synthetic
@@ -51,11 +74,13 @@ def cmd_synthetic(a):
         z = (t - true) / width
         return 80 - 2.0 * np.sum(z ** 2) + 0.5 * z[0] * z[1] + rng.normal(0, a.noise)
 
-    res = rsm_search(f, theta0, max_evals=a.max_evals, seed=a.seed, paper_mode=a.paper_mode)
+    print("[mode]", _mode_str(a))
+    res = rsm_search(f, theta0, **_search_kwargs(a))
     print("\n정답 최적점 :", _fmt(true))
     print("탐색 best   :", _fmt(res["theta_best"]))
     print("RSM 정상점  :", _fmt(res["theta_rsm"]))
-    print(f"IoU {res['iou_base']:.2f} -> {res['iou_best']:.2f}  (evals={len(res['Y'])})")
+    print(f"IoU {res['iou_base']:.2f} -> {res['iou_best']:.2f}  "
+          f"(evals={len(res['Y'])}, stop={res['stop_reason']})")
     print("RSM 통계    :", {k: (round(v, 4) if isinstance(v, float) else v)
                             for k, v in res["rsm"].items()})
 
@@ -157,6 +182,14 @@ def _fuse(base_pred, class_preds):
     return decision_fusion(base_pred, [(c, p) for c, p, _ in order]), [c for c, _, _ in order]
 
 
+def _write_trials(path, X, Y, it=None):
+    with open(path, "w", newline="") as f:
+        w = csv.writer(f)
+        w.writerow(NAMES + ["iou"] + (["iter"] if it is not None else []))
+        cols = [X, Y] + ([it] if it is not None else [])
+        w.writerows(np.column_stack(cols).round(4).tolist())
+
+
 # ------------------------------------------------------------------ inspect
 def cmd_inspect(a):
     a.label_map, a.limit = None, a.limit or 20
@@ -167,7 +200,7 @@ def cmd_inspect(a):
         return
     img = _read_tif(pairs[0][0])
     print(f"이미지 {pairs[0][0].name}: shape={img.shape} dtype={img.dtype} "
-            f"min={img.min()} max={img.max()}")
+          f"min={img.min()} max={img.max()}")
     vals = {}
     for _, mp in pairs:
         u, c = np.unique(_read_tif(mp)[0], return_counts=True)
@@ -194,8 +227,8 @@ def cmd_calibrate(a):
     imgs, msks = _load(a)
     model = _setup_model(a)
     test_frac = 0.0 if a.paper_mode else a.test_frac
-    print(f"[mode] {'논문 방식 (분리 없음, 정상점 그대로, OR 종료)' if a.paper_mode else '우리 방식 (calib/test 분리)'}"
-            f" / 기준선={a.base_mode}")
+    print(f"[mode] {_mode_str(a)} / 기준선={a.base_mode} / "
+          f"{'calib/test 분리 없음' if test_frac == 0 else f'test {test_frac:.0%} 분리'}")
 
     per_class, test_union = {}, set()
     for c in a.targets:
@@ -212,23 +245,21 @@ def cmd_calibrate(a):
         def objective(theta, ev=ev_cal, idx=calib, cc=c):
             return class_iou(ev.predict(theta), msks[idx], a.n_classes)[cc]
 
-        res = rsm_search(objective, theta0, a.rel_broad, a.n_broad, a.rel_local, a.n_local,
-                            a.max_evals, a.eps_best, a.eps_pred, a.seed, paper_mode=a.paper_mode)
+        res = rsm_search(objective, theta0, **_search_kwargs(a))
         delta = res["iou_best"] - base_iou
-        print(f"\n[class {c}] base={base_iou:.2f} best={res['iou_best']:.2f} delta={delta:+.2f}")
+        print(f"\n[class {c}] base={base_iou:.2f} best={res['iou_best']:.2f} delta={delta:+.2f} "
+              f"(evals={len(res['Y'])}, stop={res['stop_reason']})")
         print("[theta_best]", _fmt(res["theta_best"]))
         print("[ratio best/base]", np.round(res["theta_best"] / theta0, 4))
         print("[RSM]", res["rsm"])
 
-        with open(out / f"trials_c{c}.csv", "w", newline="") as f:
-            w = csv.writer(f)
-            w.writerow(NAMES + ["iou"])
-            w.writerows(np.column_stack([res["X"], res["Y"]]).round(4).tolist())
+        _write_trials(out / f"trials_c{c}.csv", res["X"], res["Y"], res["iteration"])
         per_class[c] = dict(calib=calib, test=test, theta_base=theta0,
                             theta_best=res["theta_best"], theta_rsm=res["theta_rsm"],
                             ratio=res["theta_best"] / theta0, iou_base_calib=base_iou,
                             iou_best_calib=res["iou_best"], delta=delta,
-                            rsm=res["rsm"], history=res["history"])
+                            rsm=res["rsm"], history=res["history"],
+                            stop_reason=res["stop_reason"], settings=res["settings"])
         test_union |= set(test.tolist())
 
     if not per_class:
@@ -258,10 +289,79 @@ def cmd_calibrate(a):
     table = _report(msks, splits, cols, a.n_classes, names, list(per_class), out, "iou_table.csv")
 
     json.dump(_json(dict(args=vars(a), paper_mode=a.paper_mode, base_mode=a.base_mode,
-                            fusion_order=order, classes=per_class,
-                            iou={s: dict(t) for s, t in table.items()})),
-                open(out / "result.json", "w"), indent=2, ensure_ascii=False)
+                         fusion_order=order, classes=per_class,
+                         iou={s: dict(t) for s, t in table.items()})),
+              open(out / "result.json", "w"), indent=2, ensure_ascii=False)
     print(f"\n저장: {out}/result.json, trials_c*.csv, iou_table.csv")
+
+
+# ------------------------------------------------------------------ broad
+def _fit_stats(X, y, kind):
+    """kind: linear(7) / quad_diag(13) / quad(28). R2, Adj.R2, LOOCV RMSE."""
+    sd = X.std(0)
+    sd[sd == 0] = 1.0
+    Z = (X - X.mean(0)) / sd
+    if kind == "quad":
+        A = quad_features(Z)
+    else:
+        A = np.column_stack([np.ones(len(Z)), Z] + ([Z ** 2] if kind == "quad_diag" else []))
+    n, p = A.shape
+    if n <= p:
+        return dict(p=p, r2=np.nan, adj_r2=np.nan, loo=np.nan)
+    b = np.linalg.lstsq(A, y, rcond=None)[0]
+    r = y - A @ b
+    tss = float(((y - y.mean()) ** 2).sum())
+    r2 = 1 - float(r @ r) / tss if tss > 0 else np.nan
+    adj = 1 - (1 - r2) * (n - 1) / (n - p)
+    h = np.einsum("ij,ji->i", A, np.linalg.pinv(A))
+    loo = float(np.sqrt(np.mean((r / (1 - h)) ** 2))) if np.all(h < 1 - 1e-6) else np.nan
+    return dict(p=p, r2=r2, adj_r2=adj, loo=loo)
+
+
+def cmd_broad(a):
+    """1단계(Iteration_0)만 adj0별로 돌려 IoU 분포와 피팅 적합도를 비교."""
+    from data import Evaluator, class_iou
+    out = Path(a.out)
+    out.mkdir(parents=True, exist_ok=True)
+    imgs, msks = _load(a)
+    model = _setup_model(a)
+    summary = []
+    for c in a.targets:
+        idx = _tiles_with(msks, c)
+        print(f"\n##### 클래스 {c}: 대상 타일 {len(idx)}개, adj0={a.adjs}, 각 {a.n_broad}회")
+        ev = Evaluator(model, imgs[idx], a.n_classes, a.batch, a.device, a.threads)
+        theta0 = _base_theta(a, imgs[idx])
+        print("[theta_base]", _fmt(theta0))
+
+        def objective(theta, cc=c):
+            return class_iou(ev.predict(theta), msks[idx], a.n_classes)[cc]
+
+        runs = broad_sweep(objective, theta0, a.adjs, a.n_broad, a.seed)
+        for adj, (X, Y) in runs.items():
+            _write_trials(out / f"trials_c{c}_adj{adj:g}.csv", X, Y)
+            i = int(np.argmax(Y))
+            row = dict(target=c, adj0=adj, n=len(Y), iou_base=Y[0], iou_min=Y.min(),
+                       iou_median=float(np.median(Y)), iou_max=Y.max(),
+                       n_below5=int((Y < 5).sum()), ratio_best=np.round(X[i] / theta0, 4).tolist())
+            for k in ("linear", "quad_diag", "quad"):
+                s = _fit_stats(X, Y, k)
+                row.update({f"{k}_r2": s["r2"], f"{k}_adj_r2": s["adj_r2"], f"{k}_loo": s["loo"]})
+            summary.append(row)
+
+    print(f"\n{'c':>3} {'adj0':>5} {'base':>6} {'min':>6} {'med':>6} {'max':>6} {'<5':>3} "
+          f"{'lin R2':>7} {'lin LOO':>8} {'qdiag R2':>9} {'qdiag LOO':>10} {'quad R2':>8} {'quadAdj':>8}")
+    for r in summary:
+        print(f"{r['target']:>3} {r['adj0']:>5.2f} {r['iou_base']:>6.2f} {r['iou_min']:>6.2f} "
+              f"{r['iou_median']:>6.2f} {r['iou_max']:>6.2f} {r['n_below5']:>3} "
+              f"{r['linear_r2']:>7.3f} {r['linear_loo']:>8.2f} {r['quad_diag_r2']:>9.3f} "
+              f"{r['quad_diag_loo']:>10.2f} {r['quad_r2']:>8.3f} {r['quad_adj_r2']:>8.3f}")
+    print(f"\n참고: 2차(quad) 계수 {n_min(6)}개 / 관측 {a.n_broad}개 -> 잔차 자유도 {a.n_broad - n_min(6)}. "
+          "quad R2는 거의 1이 나오므로 비교는 LOO와 분포로 할 것.")
+    with open(out / "broad_summary.csv", "w", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=list(summary[0]))
+        w.writeheader()
+        w.writerows(summary)
+    print(f"저장: {out}/broad_summary.csv, trials_c*_adj*.csv")
 
 
 # ------------------------------------------------------------------ apply
@@ -296,8 +396,8 @@ def cmd_apply(a):
         splits[f"tiles(c{c})"] = _tiles_with(msks, c)
     table = _report(msks, splits, cols, a.n_classes, names, a.targets, out, "iou_table.csv")
     json.dump(_json(dict(args=vars(a), theta_base=theta0, theta_applied=used, fusion_order=order,
-                            iou={s: dict(t) for s, t in table.items()})),
-                open(out / "apply.json", "w"), indent=2, ensure_ascii=False)
+                         iou={s: dict(t) for s, t in table.items()})),
+              open(out / "apply.json", "w"), indent=2, ensure_ascii=False)
     print(f"\n저장: {out}/apply.json, iou_table.csv")
 
 
@@ -332,21 +432,35 @@ def cmd_transfer(a):
         splits[f"tiles(c{c})"] = _tiles_with(msks, c)
     table = _report(msks, splits, cols, a.n_classes, names, a.targets, out, "iou_table.csv")
     json.dump(_json(dict(source=a.source, classes=used, fusion_order=order,
-                            iou={s: dict(t) for s, t in table.items()})),
-                open(out / "transfer.json", "w"), indent=2, ensure_ascii=False)
+                         iou={s: dict(t) for s, t in table.items()})),
+              open(out / "transfer.json", "w"), indent=2, ensure_ascii=False)
     print(f"\n저장: {out}/transfer.json, iou_table.csv")
 
 
 # ------------------------------------------------------------------ cli
+def _add_search_args(p):
+    p.add_argument("--paper-mode", action="store_true", help="논문 Figure 1 방식 그대로")
+    p.add_argument("--rel-broad", "--adj0", type=float, default=None,
+                   help="1단계 폭 (상대 비율). 기본: 논문 0.5 / 우리 0.10")
+    p.add_argument("--n-broad", "--n0", type=int, default=30)
+    p.add_argument("--rel-local", "--adj-t", type=float, default=None,
+                   help="2단계 폭 (상대 비율). 기본: 논문 0.15 / 우리 0.03")
+    p.add_argument("--n-local", "--n-t", type=int, default=None,
+                   help="회차당 추론 수. 기본: 논문 5 / 우리 6(+정상점 1)")
+    p.add_argument("--max-evals", type=int, default=60)
+    p.add_argument("--eps-stop", type=float, default=0.0, help="논문 모드 종료 임계값 (Figure 1: ≈0)")
+    p.add_argument("--eps-best", type=float, default=0.1, help="우리 모드 종료 임계값 1")
+    p.add_argument("--eps-pred", type=float, default=1.0, help="우리 모드 종료 임계값 2")
+
+
 def main():
     p = argparse.ArgumentParser()
     sub = p.add_subparsers(dest="cmd", required=True)
 
     s = sub.add_parser("synthetic")
     s.add_argument("--noise", type=float, default=0.3)
-    s.add_argument("--max-evals", type=int, default=60)
     s.add_argument("--seed", type=int, default=0)
-    s.add_argument("--paper-mode", action="store_true")
+    _add_search_args(s)
 
     common = argparse.ArgumentParser(add_help=False)
     common.add_argument("--img-dir", required=True)
@@ -373,15 +487,14 @@ def main():
     c = sub.add_parser("calibrate", parents=[common])
     c.add_argument("--targets", "--target", type=int, nargs="+", required=True, help="모델 클래스 인덱스 (여러 개 가능)")
     c.add_argument("--out", default="out")
-    c.add_argument("--paper-mode", action="store_true", help="논문 Figure 1 방식 그대로")
     c.add_argument("--test-frac", type=float, default=0.3)
-    c.add_argument("--rel-broad", type=float, default=0.10)
-    c.add_argument("--n-broad", type=int, default=30)
-    c.add_argument("--rel-local", type=float, default=0.03)
-    c.add_argument("--n-local", type=int, default=6)
-    c.add_argument("--max-evals", type=int, default=60)
-    c.add_argument("--eps-best", type=float, default=0.1)
-    c.add_argument("--eps-pred", type=float, default=1.0)
+    _add_search_args(c)
+
+    b = sub.add_parser("broad", parents=[common])
+    b.add_argument("--targets", "--target", type=int, nargs="+", required=True)
+    b.add_argument("--adjs", type=float, nargs="+", default=[0.10, 0.25, 0.50])
+    b.add_argument("--n-broad", type=int, default=30)
+    b.add_argument("--out", default="out_broad")
 
     ap = sub.add_parser("apply", parents=[common])
     ap.add_argument("--targets", "--target", type=int, nargs="+", required=True)
@@ -396,7 +509,7 @@ def main():
 
     a = p.parse_args()
     {"synthetic": cmd_synthetic, "inspect": cmd_inspect, "calibrate": cmd_calibrate,
-        "apply": cmd_apply, "transfer": cmd_transfer}[a.cmd](a)
+     "broad": cmd_broad, "apply": cmd_apply, "transfer": cmd_transfer}[a.cmd](a)
 
 
 if __name__ == "__main__":

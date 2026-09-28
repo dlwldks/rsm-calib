@@ -2,70 +2,82 @@
 
 Moon & Cho (2026), *Remote Sensing* 18:205 재현용.
 모델 가중치는 고정하고, 입력 정규화 값 6개(RGB mean/std)를 반응표면법(RSM)으로 튜닝한다.
+논문과 코드의 항목별 대조는 [`docs/paper_vs_code.md`](docs/paper_vs_code.md).
 
 ## 파일
 
 | 파일 | 역할 |
 |---|---|
 | `rsm.py` | 2차 회귀 피팅(식 1·2), R²/Adj.R²/F/p, 정상점(식 3), 비례 전이(식 4) |
-| `search.py` | 2단계 순차 탐색 (넓게 LHS 30회 → 최적점 주변 좁혀서 반복) |
+| `search.py` | 탐색. `rsm_search_paper`(논문 Figure 1) / `rsm_search_ours`(우리 변형) / `broad_sweep`(1단계 폭 비교) |
 | `data.py` | TIF 로딩, 라벨 매핑, smp U-Net 로딩, 추론/IoU, decision fusion |
-| `run.py` | CLI: `synthetic` / `inspect` / `calibrate` / `transfer` |
+| `run.py` | CLI: `synthetic` / `inspect` / `calibrate` / `broad` / `apply` / `transfer` |
+| `analysis/order_compare.py` | `trials_c*.csv`로 1~3차 반응면 모델 비교 (추론 불필요) |
+| `labelmap_19.json` | FLAIR 마스크 값(1~19) → 모델 출력 인덱스(19채널) |
 
 ## 설치
 
 ```bash
-pip install numpy scipy torch segmentation-models-pytorch rasterio safetensors
+pip install -r requirements.txt
 ```
+GPU 컴퓨터에서는 `torch`, `torchvision` 두 줄을 빼고, CUDA 버전에 맞는 torch를 따로 설치한 뒤 `--device cuda`.
+
+## 탐색 모드
+
+| | `--paper-mode` (논문 Figure 1) | 기본 (우리 변형) |
+|---|---|---|
+| 1단계 | θ0 포함 30개, θ0 × (1 ± 0.5) | θ0 포함 30개, θ0 × (1 ± 0.10) |
+| 이후 회차 | 정상점 θ̂ 포함 5개, θ̂ × (1 ± 0.15) | 상자 안 곡면 최댓값 1개 + 주변 6개, ±0.03 |
+| 탐색 경계 | 없음 (정상점 따라 이동) | θ0 ± 10% 상자 고정 |
+| 정상점이 saddle/min | 그대로 사용 | 상자 안 곡면 최댓값 사용 |
+| ε1 | 이번 회차 best − 지난 회차 best | 누적 best 개선폭 |
+| ε2 | \|이번 회차 best − 예측 IoU\| | \|정상점 실제 IoU − 예측 IoU\| |
+| 종료 | ε1 ≤ ε_stop **OR** ε2 ≤ ε_stop (ε_stop=0) | ε1 ≤ 0.1 **AND** ε2 ≤ 1.0 |
+| calib/test 분리 | 없음 | 70/30 |
+
+두 모드 공통: `--max-evals`(기본 60)에서 종료. 모든 폭은 `--adj0 / --adj-t / --n0 / --n-t / --eps-stop`으로 바꿀 수 있다.
 
 ## 순서
 
 **0. 로직 검증 (모델·데이터 불필요)**
 ```bash
-python run.py synthetic
+python run.py synthetic --paper-mode
 ```
-정답 최적점을 아는 가짜 IoU 함수로 탐색이 수렴하는지 확인.
 
 **1. 데이터/모델 점검**
 ```bash
-python run.py inspect --img-dir flair_toy --msk-dir flair_toy \
-  --checkpoint FLAIR_rgb_resnet34.safetensors
+python run.py inspect --img-dir <DIR> --msk-dir <DIR> --checkpoint <CKPT> --n-classes 19
 ```
-- 이미지 밴드 수, 마스크 원본 값 분포, 모델 출력 클래스 수를 확인한다.
-- **꼭 확인할 것**: 마스크 값(FLAIR는 1~19)을 모델 출력 인덱스로 옮기는 매핑.
-  기본값은 `1..n → 0..n-1`인데, 모델 카드와 다르면 `labelmap.json`을 만들어 `--label-map`으로 넘긴다.
-  ```json
-  {"1": 0, "2": 1, "13": 12, "18": 13, "19": 14, "14": null}
-  ```
-- 모델이 `(x-mean)/std`를 0~255 스케일에서 쓰는지도 모델 카드에서 확인 (코드는 0~255 기준).
 
-**2. 캘리브레이션 (E2 재현)**
+**2. 1단계 탐색 폭 비교 (adj0 결정용)**
 ```bash
-python run.py calibrate --img-dir flair_toy --msk-dir flair_toy \
-  --checkpoint FLAIR_rgb_resnet34.safetensors --target 5 --out out_e2 \
-  --class-names building,pervious,impervious,bare_soil,water,coniferous,deciduous,brushwood,vineyard,herbaceous,agricultural,plowed,swimming_pool,greenhouse,other
+python run.py broad --img-dir <DIR> --msk-dir <DIR> --checkpoint <CKPT> --n-classes 19 ^
+  --label-map labelmap_19.json --targets 5 --adjs 0.1 0.25 0.5 --out out_broad
 ```
-- `--target`: 모델 클래스 인덱스 (위 순서라면 coniferous=5)
-- 타깃 클래스가 있는 타일을 **calib 70% / test 30%로 분리**한다. 논문은 분리하지 않았으니, test 열에서 개선이 유지되는지가 핵심 확인 포인트.
-- MiT-B5는 `--encoder mit_b5`
-- 출력: `result.json`(theta, 비율, RSM 통계), `trials.csv`(모든 추론 기록), `iou_table.csv`(base / best / fusion)
+adj0별 IoU 분포(최저·중앙·최고, 5 미만 개수)와 1차/2차 피팅 LOOCV를 `broad_summary.csv`로 저장.
 
-**3. 비례 전이 (E4·E5 재현)**
+**3. 캘리브레이션 (E2 재현)**
 ```bash
-python run.py transfer --img-dir D067 --msk-dir D067 --checkpoint ... \
-  --source out_d004/result.json --target 5 --out out_d067_from_d004
+python run.py calibrate --img-dir <DIR> --msk-dir <DIR> --checkpoint <CKPT> --n-classes 19 ^
+  --label-map labelmap_19.json --targets 5 --paper-mode --base-mode per-tile --out out_e2_fig1
 ```
-D004에서 찾은 `best/base` 비율을 D067 기본 통계에 곱해서 재탐색 없이 평가한다.
+출력: `result.json`(θ, 비율, RSM 통계, 회차별 ε1·ε2, 종료 사유), `trials_c*.csv`(모든 추론 기록 + 회차 번호), `iou_table.csv`.
 
-## 논문과 다른 점
+**4. 차수 비교**
+```bash
+python analysis/order_compare.py out_e2_fig1/trials_c5.csv
+```
 
-- 종료 조건: 논문은 (ε1 또는 ε2), 여기선 **둘 다** 만족해야 멈춤 (조기 종료 방지). `--max-evals`로 상한.
-- 탐색 범위: 논문의 `adj`는 단위가 모호해서 base 대비 **상대 비율**(±10% → ±3%)로 둠.
-  논문 최적값이 base 대비 대략 ±7% 안이라 이 범위면 충분.
-- 정상점이 극대가 아니거나 범위 밖이면, 범위 내 L-BFGS-B로 반응면 최댓값을 찾는다.
-- calib/test 분리 추가.
+**5. 비례 전이 (E4·E5) / 모델 간 적용**
+```bash
+python run.py transfer ... --source out_d004/result.json --targets 5 --out out_d067_from_d004
+python run.py apply ... --encoder mit_b5 --theta-from out_e2_fig1/result.json --targets 5 --out out_apply_mitb5
+```
 
-## CPU 시간 감각
+## 논문에 없어서 우리가 정한 값 (`--paper-mode`에서도 적용)
 
-512×512 타일, ResNet34 기준 타일당 약 0.3~0.5초 → 47타일 × 60회 추론이면 15~25분 정도.
-처음엔 `--limit 30`, `--max-evals 40`으로 짧게 돌려보는 것 추천.
+- adj는 **상대 비율** (θ × (1 ± adj)). 근거는 `docs/paper_vs_code.md`.
+- Neighborhood 샘플은 **LHS**, seed 0.
+- 정상점과 샘플은 **물리적 범위**(mean 0~255, std 1~255)로 자른다. 경계 없는 탐색에서 std ≤ 0을 막기 위한 장치.
+- adj_t는 0.15 고정 (논문은 0.1–0.2 범위라고만 씀).
+- `--max-evals` 60 상한 (논문 본문: 60회 이내).
