@@ -59,14 +59,16 @@ adj0별 IoU 분포(최저·중앙·최고, 5 미만 개수)와 1차/2차 피팅 
 **3. 캘리브레이션 (E2 재현)**
 ```bash
 python run.py calibrate --img-dir <DIR> --msk-dir <DIR> --checkpoint <CKPT> --n-classes 19 ^
-  --label-map labelmap_19.json --targets 5 --paper-mode --base-mode per-tile --out out_e2_fig1
+  --label-map labelmap_19.json --targets 5 --paper-mode --out out_e2_fig1
 ```
 출력: `result.json`(θ, 비율, RSM 통계, 회차별 ε1·ε2, 종료 사유), `trials_c*.csv`(모든 추론 기록 + 회차 번호), `iou_table.csv`.
 
-**3-1. 논문 E2 조건 (toy test 50타일 전부로 보정)**
+**3-1. 논문 E2 조건 (toy test 50타일 전부로 보정, 기준 = 타일 전체 채널 통계 한 세트)**
+
+이 조건에서 기준 IoU가 논문 Table 6 (b)와 14개 클래스 모두 ±1.2 이내로 재현됨 (`docs/paper_vs_code.md` 8절).
 ```bash
 python run.py calibrate --img-dir <DIR> --msk-dir <DIR> --checkpoint <CKPT> --n-classes 19 ^
-  --label-map labelmap_19.json --targets 5 --paper-mode --base-mode per-tile ^
+  --label-map labelmap_19.json --targets 5 --paper-mode ^
   --include test --calib-tiles all --out out_e2_test50
 ```
 
