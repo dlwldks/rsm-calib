@@ -77,6 +77,13 @@ python run.py calibrate --img-dir <DIR> --msk-dir <DIR> --checkpoint <CKPT> --n-
 python analysis/order_compare.py out_e2_fig1/trials_c5.csv
 ```
 
+**4-1. 계수 추정 방법 비교 (최소제곱 / Ridge / 가중 최소제곱 / Huber / 붕괴 표본 제외)**
+```bash
+python analysis/solver_compare.py out_e2_test50_adj10/trials_c5.csv out_e2_test50_adj0.25/trials_c5.csv out_e2_test50/trials_c5.csv ^
+  --labels 10% 25% 50% --out analysis/results/solver_summary.csv --theta-out analysis/results/solver_theta.csv
+```
+결과는 `analysis/results/`. `solver_theta.csv`의 정상점·상자 내 최대점은 `run.py apply --theta`로 실제 IoU를 확인한다.
+
 **5. 비례 전이 (E4·E5) / 모델 간 적용**
 ```bash
 python run.py transfer ... --source out_d004/result.json --targets 5 --out out_d067_from_d004
