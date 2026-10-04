@@ -11,5 +11,6 @@
 | 2026-09-29 | `9_29_RSM_Calibration_보고서.md` | 같은 보고서의 텍스트 버전 |
 | 2026-09-29 | `9_29_RSM_Calibration_발표자료.pdf` | 발표 슬라이드 (8쪽) |
 | 2026-09-29 | `9_29_RSM_Calibration_발표대본.pdf` | 발표 대본 (5쪽) |
+| 2026-09-30 | `FLAIR1_데이터명세서.pdf` | FLAIR #1 전체 데이터 명세서 (9쪽, 교수님께 전송) |
 
 10/6 미팅용 보고서는 계속 업데이트 중인 문서로 작성: https://claude.ai/code/artifact/c3d07ecf-8258-4775-9d7c-041bb37ed40b
