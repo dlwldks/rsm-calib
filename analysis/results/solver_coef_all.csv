@@ -1,0 +1,561 @@
+record,method,term,coef
+±10%,ols,상수 c,14.5899
+±10%,ols,Rm,-4.219
+±10%,ols,Gm,9.8275
+±10%,ols,Bm,-1.3398
+±10%,ols,Rs,-0.5843
+±10%,ols,Gs,-2.7658
+±10%,ols,Bs,0.7242
+±10%,ols,Rm²,4.3042
+±10%,ols,Rm·Gm,-14.1049
+±10%,ols,Rm·Bm,0.9064
+±10%,ols,Rm·Rs,-2.8538
+±10%,ols,Rm·Gs,4.0828
+±10%,ols,Rm·Bs,-5.1446
+±10%,ols,Gm²,6.0363
+±10%,ols,Gm·Bm,6.0003
+±10%,ols,Gm·Rs,-0.8484
+±10%,ols,Gm·Gs,3.4245
+±10%,ols,Gm·Bs,3.5937
+±10%,ols,Bm²,-1.561
+±10%,ols,Bm·Rs,2.8052
+±10%,ols,Bm·Gs,-4.6998
+±10%,ols,Bm·Bs,-0.5234
+±10%,ols,Rs²,2.2295
+±10%,ols,Rs·Gs,4.423
+±10%,ols,Rs·Bs,-3.2981
+±10%,ols,Gs²,-4.612
+±10%,ols,Gs·Bs,1.3241
+±10%,ols,Bs²,-0.3839
+±10%,ridge,상수 c,13.9327
+±10%,ridge,Rm,-3.569
+±10%,ridge,Gm,6.0023
+±10%,ridge,Bm,-0.5464
+±10%,ridge,Rs,0.5164
+±10%,ridge,Gs,-0.6556
+±10%,ridge,Bs,-0.9495
+±10%,ridge,Rm²,1.9865
+±10%,ridge,Rm·Gm,-1.1395
+±10%,ridge,Rm·Bm,-0.7577
+±10%,ridge,Rm·Rs,-1.0727
+±10%,ridge,Rm·Gs,-0.6199
+±10%,ridge,Rm·Bs,-2.7084
+±10%,ridge,Gm²,-1.7325
+±10%,ridge,Gm·Bm,2.3636
+±10%,ridge,Gm·Rs,0.4145
+±10%,ridge,Gm·Gs,2.709
+±10%,ridge,Gm·Bs,1.2042
+±10%,ridge,Bm²,0.1863
+±10%,ridge,Bm·Rs,0.1912
+±10%,ridge,Bm·Gs,-0.8023
+±10%,ridge,Bm·Bs,0.0566
+±10%,ridge,Rs²,0.4255
+±10%,ridge,Rs·Gs,0.3856
+±10%,ridge,Rs·Bs,0.294
+±10%,ridge,Gs²,-1.2605
+±10%,ridge,Gs·Bs,-0.4702
+±10%,ridge,Bs²,-0.0447
+±10%,wls,상수 c,14.6865
+±10%,wls,Rm,-3.9993
+±10%,wls,Gm,9.992
+±10%,wls,Bm,-1.3889
+±10%,wls,Rs,-0.64
+±10%,wls,Gs,-3.0669
+±10%,wls,Bs,0.9284
+±10%,wls,Rm²,4.941
+±10%,wls,Rm·Gm,-16.4789
+±10%,wls,Rm·Bm,1.1583
+±10%,wls,Rm·Rs,-3.1796
+±10%,wls,Rm·Gs,5.1654
+±10%,wls,Rm·Bs,-5.2685
+±10%,wls,Gm²,7.5267
+±10%,wls,Gm·Bm,6.5394
+±10%,wls,Gm·Rs,-1.0637
+±10%,wls,Gm·Gs,3.3353
+±10%,wls,Gm·Bs,3.3485
+±10%,wls,Bm²,-1.8123
+±10%,wls,Bm·Rs,3.2574
+±10%,wls,Bm·Gs,-5.5444
+±10%,wls,Bm·Bs,-0.5414
+±10%,wls,Rs²,2.4512
+±10%,wls,Rs·Gs,5.1621
+±10%,wls,Rs·Bs,-3.8426
+±10%,wls,Gs²,-5.4357
+±10%,wls,Gs·Bs,1.8354
+±10%,wls,Bs²,-0.3523
+±10%,huber,상수 c,14.2581
+±10%,huber,Rm,-3.825
+±10%,huber,Gm,6.897
+±10%,huber,Bm,-0.7711
+±10%,huber,Rs,0.2496
+±10%,huber,Gs,-0.8402
+±10%,huber,Bs,-0.3632
+±10%,huber,Rm²,2.583
+±10%,huber,Rm·Gm,-4.3264
+±10%,huber,Rm·Bm,0.132
+±10%,huber,Rm·Rs,-1.7566
+±10%,huber,Rm·Gs,-0.5426
+±10%,huber,Rm·Bs,-3.7521
+±10%,huber,Gm²,-0.222
+±10%,huber,Gm·Bm,2.8342
+±10%,huber,Gm·Rs,-0.2493
+±10%,huber,Gm·Gs,4.5193
+±10%,huber,Gm·Bs,2.209
+±10%,huber,Bm²,-0.7628
+±10%,huber,Bm·Rs,0.7411
+±10%,huber,Bm·Gs,-1.6949
+±10%,huber,Bm·Bs,-0.1594
+±10%,huber,Rs²,1.0629
+±10%,huber,Rs·Gs,2.5789
+±10%,huber,Rs·Bs,-1.0346
+±10%,huber,Gs²,-2.2556
+±10%,huber,Gs·Bs,-0.2318
+±10%,huber,Bs²,0.1031
+±10%,exclude,상수 c,12.3783
+±10%,exclude,Rm,-9.2824
+±10%,exclude,Gm,10.0695
+±10%,exclude,Bm,2.4125
+±10%,exclude,Rs,-1.5236
+±10%,exclude,Gs,-1.9472
+±10%,exclude,Bs,3.2271
+±10%,exclude,Rm²,-0.4937
+±10%,exclude,Rm·Gm,-14.4353
+±10%,exclude,Rm·Bm,3.1972
+±10%,exclude,Rm·Rs,-4.1726
+±10%,exclude,Rm·Gs,3.0134
+±10%,exclude,Rm·Bs,-3.881
+±10%,exclude,Gm²,42.6493
+±10%,exclude,Gm·Bm,-6.4582
+±10%,exclude,Gm·Rs,-4.021
+±10%,exclude,Gm·Gs,-41.7862
+±10%,exclude,Gm·Bs,27.9753
+±10%,exclude,Bm²,-1.1201
+±10%,exclude,Bm·Rs,1.825
+±10%,exclude,Bm·Gs,8.8446
+±10%,exclude,Bm·Bs,-5.2547
+±10%,exclude,Rs²,1.8957
+±10%,exclude,Rs·Gs,3.3715
+±10%,exclude,Rs·Bs,-3.1932
+±10%,exclude,Gs²,9.7201
+±10%,exclude,Gs·Bs,-12.0134
+±10%,exclude,Bs²,1.7143
+±25%,ols,상수 c,9.8866
+±25%,ols,Rm,-1.1366
+±25%,ols,Gm,6.4566
+±25%,ols,Bm,-1.555
+±25%,ols,Rs,-1.5948
+±25%,ols,Gs,2.2014
+±25%,ols,Bs,5.399
+±25%,ols,Rm²,0.1675
+±25%,ols,Rm·Gm,9.2775
+±25%,ols,Rm·Bm,0.2375
+±25%,ols,Rm·Rs,8.2055
+±25%,ols,Rm·Gs,-2.6629
+±25%,ols,Rm·Bs,0.1379
+±25%,ols,Gm²,-9.817
+±25%,ols,Gm·Bm,-10.3668
+±25%,ols,Gm·Rs,-4.8795
+±25%,ols,Gm·Gs,3.0501
+±25%,ols,Gm·Bs,10.5821
+±25%,ols,Bm²,-1.5503
+±25%,ols,Bm·Rs,-3.9572
+±25%,ols,Bm·Gs,11.2465
+±25%,ols,Bm·Bs,0.9876
+±25%,ols,Rs²,2.2375
+±25%,ols,Rs·Gs,-3.1515
+±25%,ols,Rs·Bs,5.89
+±25%,ols,Gs²,-0.7829
+±25%,ols,Gs·Bs,-6.2234
+±25%,ols,Bs²,3.1408
+±25%,ridge,상수 c,9.4742
+±25%,ridge,Rm,-0.5034
+±25%,ridge,Gm,2.4716
+±25%,ridge,Bm,-0.4709
+±25%,ridge,Rs,-0.7578
+±25%,ridge,Gs,1.806
+±25%,ridge,Bs,1.0055
+±25%,ridge,Rm²,-0.6587
+±25%,ridge,Rm·Gm,0.5384
+±25%,ridge,Rm·Bm,-1.3684
+±25%,ridge,Rm·Rs,1.3608
+±25%,ridge,Rm·Gs,-0.0328
+±25%,ridge,Rm·Bs,-0.4029
+±25%,ridge,Gm²,-0.0438
+±25%,ridge,Gm·Bm,0.0342
+±25%,ridge,Gm·Rs,0.2701
+±25%,ridge,Gm·Gs,0.5796
+±25%,ridge,Gm·Bs,1.019
+±25%,ridge,Bm²,0.7284
+±25%,ridge,Bm·Rs,0.6542
+±25%,ridge,Bm·Gs,-0.5913
+±25%,ridge,Bm·Bs,1.009
+±25%,ridge,Rs²,0.0195
+±25%,ridge,Rs·Gs,0.2575
+±25%,ridge,Rs·Bs,1.0062
+±25%,ridge,Gs²,-0.6489
+±25%,ridge,Gs·Bs,0.6189
+±25%,ridge,Bs²,0.6989
+±25%,wls,상수 c,9.0608
+±25%,wls,Rm,-0.6093
+±25%,wls,Gm,8.1542
+±25%,wls,Bm,-2.8699
+±25%,wls,Rs,-2.2735
+±25%,wls,Gs,1.919
+±25%,wls,Bs,6.3168
+±25%,wls,Rm²,-1.0697
+±25%,wls,Rm·Gm,10.9785
+±25%,wls,Rm·Bm,0.5761
+±25%,wls,Rm·Rs,10.123
+±25%,wls,Rm·Gs,-5.4181
+±25%,wls,Rm·Bs,1.815
+±25%,wls,Gm²,-10.3453
+±25%,wls,Gm·Bm,-12.0882
+±25%,wls,Gm·Rs,-7.0228
+±25%,wls,Gm·Gs,2.4494
+±25%,wls,Gm·Bs,13.5841
+±25%,wls,Bm²,-2.6044
+±25%,wls,Bm·Rs,-4.626
+±25%,wls,Bm·Gs,16.6268
+±25%,wls,Bm·Bs,-1.3489
+±25%,wls,Rs²,1.7082
+±25%,wls,Rs·Gs,-6.6672
+±25%,wls,Rs·Bs,8.2958
+±25%,wls,Gs²,0.6655
+±25%,wls,Gs·Bs,-10.6262
+±25%,wls,Bs²,5.7977
+±25%,huber,상수 c,11.4235
+±25%,huber,Rm,-0.8794
+±25%,huber,Gm,5.7257
+±25%,huber,Bm,-1.0772
+±25%,huber,Rs,-2.1794
+±25%,huber,Gs,3.7146
+±25%,huber,Bs,4.9186
+±25%,huber,Rm²,-2.9002
+±25%,huber,Rm·Gm,7.4952
+±25%,huber,Rm·Bm,-1.6673
+±25%,huber,Rm·Rs,2.3008
+±25%,huber,Rm·Gs,0.5963
+±25%,huber,Rm·Bs,0.9685
+±25%,huber,Gm²,-6.7901
+±25%,huber,Gm·Bm,-0.3672
+±25%,huber,Gm·Rs,-4.0377
+±25%,huber,Gm·Gs,-0.501
+±25%,huber,Gm·Bs,4.0515
+±25%,huber,Bm²,0.0881
+±25%,huber,Bm·Rs,0.9029
+±25%,huber,Bm·Gs,3.4152
+±25%,huber,Bm·Bs,2.9354
+±25%,huber,Rs²,1.302
+±25%,huber,Rs·Gs,-2.6345
+±25%,huber,Rs·Bs,3.3234
+±25%,huber,Gs²,-0.8503
+±25%,huber,Gs·Bs,-0.0579
+±25%,huber,Bs²,0.6647
+±25%,exclude,상수 c,
+±25%,exclude,Rm,
+±25%,exclude,Gm,
+±25%,exclude,Bm,
+±25%,exclude,Rs,
+±25%,exclude,Gs,
+±25%,exclude,Bs,
+±25%,exclude,Rm²,
+±25%,exclude,Rm·Gm,
+±25%,exclude,Rm·Bm,
+±25%,exclude,Rm·Rs,
+±25%,exclude,Rm·Gs,
+±25%,exclude,Rm·Bs,
+±25%,exclude,Gm²,
+±25%,exclude,Gm·Bm,
+±25%,exclude,Gm·Rs,
+±25%,exclude,Gm·Gs,
+±25%,exclude,Gm·Bs,
+±25%,exclude,Bm²,
+±25%,exclude,Bm·Rs,
+±25%,exclude,Bm·Gs,
+±25%,exclude,Bm·Bs,
+±25%,exclude,Rs²,
+±25%,exclude,Rs·Gs,
+±25%,exclude,Rs·Bs,
+±25%,exclude,Gs²,
+±25%,exclude,Gs·Bs,
+±25%,exclude,Bs²,
+±50%,ols,상수 c,14.9345
+±50%,ols,Rm,-0.5739
+±50%,ols,Gm,3.7427
+±50%,ols,Bm,-1.4089
+±50%,ols,Rs,-1.4768
+±50%,ols,Gs,6.6067
+±50%,ols,Bs,2.1525
+±50%,ols,Rm²,-7.1502
+±50%,ols,Rm·Gm,4.2113
+±50%,ols,Rm·Bm,3.3978
+±50%,ols,Rm·Rs,-5.5133
+±50%,ols,Rm·Gs,0.4672
+±50%,ols,Rm·Bs,5.805
+±50%,ols,Gm²,2.5598
+±50%,ols,Gm·Bm,10.575
+±50%,ols,Gm·Rs,0.0575
+±50%,ols,Gm·Gs,-3.8466
+±50%,ols,Gm·Bs,0.787
+±50%,ols,Bm²,-3.2412
+±50%,ols,Bm·Rs,-2.6357
+±50%,ols,Bm·Gs,-8.4775
+±50%,ols,Bm·Bs,8.1318
+±50%,ols,Rs²,-3.4691
+±50%,ols,Rs·Gs,-1.7267
+±50%,ols,Rs·Bs,4.0461
+±50%,ols,Gs²,1.4018
+±50%,ols,Gs·Bs,7.8473
+±50%,ols,Bs²,-3.1835
+±50%,ridge,상수 c,9.7815
+±50%,ridge,Rm,-0.46
+±50%,ridge,Gm,0.5322
+±50%,ridge,Bm,-0.2683
+±50%,ridge,Rs,0.0931
+±50%,ridge,Gs,0.8473
+±50%,ridge,Bs,0.1059
+±50%,ridge,Rm²,-0.9377
+±50%,ridge,Rm·Gm,0.1988
+±50%,ridge,Rm·Bm,0.3416
+±50%,ridge,Rm·Rs,0.1449
+±50%,ridge,Rm·Gs,-0.1845
+±50%,ridge,Rm·Bs,0.3429
+±50%,ridge,Gm²,-0.6848
+±50%,ridge,Gm·Bm,0.237
+±50%,ridge,Gm·Rs,0.2025
+±50%,ridge,Gm·Gs,0.0284
+±50%,ridge,Gm·Bs,0.3799
+±50%,ridge,Bm²,-0.8473
+±50%,ridge,Bm·Rs,0.1701
+±50%,ridge,Bm·Gs,-0.2818
+±50%,ridge,Bm·Bs,0.0566
+±50%,ridge,Rs²,-0.4025
+±50%,ridge,Rs·Gs,0.5431
+±50%,ridge,Rs·Bs,0.6652
+±50%,ridge,Gs²,-0.5871
+±50%,ridge,Gs·Bs,0.0623
+±50%,ridge,Bs²,-0.0978
+±50%,wls,상수 c,14.6384
+±50%,wls,Rm,-1.2896
+±50%,wls,Gm,3.6225
+±50%,wls,Bm,-2.1116
+±50%,wls,Rs,-0.8002
+±50%,wls,Gs,6.2432
+±50%,wls,Bs,1.808
+±50%,wls,Rm²,-7.2449
+±50%,wls,Rm·Gm,4.9008
+±50%,wls,Rm·Bm,3.2764
+±50%,wls,Rm·Rs,-4.5434
+±50%,wls,Rm·Gs,0.1026
+±50%,wls,Rm·Bs,5.1055
+±50%,wls,Gm²,2.4184
+±50%,wls,Gm·Bm,8.9417
+±50%,wls,Gm·Rs,0.5346
+±50%,wls,Gm·Gs,-4.0218
+±50%,wls,Gm·Bs,-0.2257
+±50%,wls,Bm²,-2.9489
+±50%,wls,Bm·Rs,-4.5109
+±50%,wls,Bm·Gs,-7.513
+±50%,wls,Bm·Bs,9.0528
+±50%,wls,Rs²,-3.7864
+±50%,wls,Rs·Gs,-0.9454
+±50%,wls,Rs·Bs,5.7097
+±50%,wls,Gs²,1.1906
+±50%,wls,Gs·Bs,7.5042
+±50%,wls,Bs²,-3.3127
+±50%,huber,상수 c,13.1486
+±50%,huber,Rm,-0.4461
+±50%,huber,Gm,3.6607
+±50%,huber,Bm,-0.8697
+±50%,huber,Rs,-2.0709
+±50%,huber,Gs,5.1653
+±50%,huber,Bs,2.2019
+±50%,huber,Rm²,-6.3207
+±50%,huber,Rm·Gm,3.7362
+±50%,huber,Rm·Bm,2.8599
+±50%,huber,Rm·Rs,-3.984
+±50%,huber,Rm·Gs,0.0007
+±50%,huber,Rm·Bs,5.8903
+±50%,huber,Gm²,2.5698
+±50%,huber,Gm·Bm,9.1144
+±50%,huber,Gm·Rs,-0.1077
+±50%,huber,Gm·Gs,-2.9132
+±50%,huber,Gm·Bs,1.972
+±50%,huber,Bm²,-3.6186
+±50%,huber,Bm·Rs,-1.6356
+±50%,huber,Bm·Gs,-5.7032
+±50%,huber,Bm·Bs,6.0375
+±50%,huber,Rs²,-2.8213
+±50%,huber,Rs·Gs,-2.9875
+±50%,huber,Rs·Bs,4.1961
+±50%,huber,Gs²,1.5442
+±50%,huber,Gs·Bs,5.4432
+±50%,huber,Bs²,-1.7181
+±50%,exclude,상수 c,
+±50%,exclude,Rm,
+±50%,exclude,Gm,
+±50%,exclude,Bm,
+±50%,exclude,Rs,
+±50%,exclude,Gs,
+±50%,exclude,Bs,
+±50%,exclude,Rm²,
+±50%,exclude,Rm·Gm,
+±50%,exclude,Rm·Bm,
+±50%,exclude,Rm·Rs,
+±50%,exclude,Rm·Gs,
+±50%,exclude,Rm·Bs,
+±50%,exclude,Gm²,
+±50%,exclude,Gm·Bm,
+±50%,exclude,Gm·Rs,
+±50%,exclude,Gm·Gs,
+±50%,exclude,Gm·Bs,
+±50%,exclude,Bm²,
+±50%,exclude,Bm·Rs,
+±50%,exclude,Bm·Gs,
+±50%,exclude,Bm·Bs,
+±50%,exclude,Rs²,
+±50%,exclude,Rs·Gs,
+±50%,exclude,Rs·Bs,
+±50%,exclude,Gs²,
+±50%,exclude,Gs·Bs,
+±50%,exclude,Bs²,
+±50% 125회,ols,상수 c,12.7313
+±50% 125회,ols,Rm,-0.4648
+±50% 125회,ols,Gm,1.336
+±50% 125회,ols,Bm,0.4203
+±50% 125회,ols,Rs,2.0614
+±50% 125회,ols,Gs,3.4207
+±50% 125회,ols,Bs,-2.0198
+±50% 125회,ols,Rm²,-2.3532
+±50% 125회,ols,Rm·Gm,2.0216
+±50% 125회,ols,Rm·Bm,1.6981
+±50% 125회,ols,Rm·Rs,-2.0879
+±50% 125회,ols,Rm·Gs,-0.787
+±50% 125회,ols,Rm·Bs,2.7903
+±50% 125회,ols,Gm²,0.6948
+±50% 125회,ols,Gm·Bm,2.3871
+±50% 125회,ols,Gm·Rs,0.4399
+±50% 125회,ols,Gm·Gs,-1.3554
+±50% 125회,ols,Gm·Bs,2.7435
+±50% 125회,ols,Bm²,-1.6099
+±50% 125회,ols,Bm·Rs,-3.3961
+±50% 125회,ols,Bm·Gs,-2.6683
+±50% 125회,ols,Bm·Bs,4.7745
+±50% 125회,ols,Rs²,-6.2262
+±50% 125회,ols,Rs·Gs,-1.7244
+±50% 125회,ols,Rs·Bs,7.2042
+±50% 125회,ols,Gs²,-3.0514
+±50% 125회,ols,Gs·Bs,6.7705
+±50% 125회,ols,Bs²,-2.2008
+±50% 125회,ridge,상수 c,12.7878
+±50% 125회,ridge,Rm,-0.4498
+±50% 125회,ridge,Gm,1.4817
+±50% 125회,ridge,Bm,0.3945
+±50% 125회,ridge,Rs,1.6037
+±50% 125회,ridge,Gs,3.1833
+±50% 125회,ridge,Bs,-1.1845
+±50% 125회,ridge,Rm²,-2.2363
+±50% 125회,ridge,Rm·Gm,1.6761
+±50% 125회,ridge,Rm·Bm,1.5558
+±50% 125회,ridge,Rm·Rs,-2.3132
+±50% 125회,ridge,Rm·Gs,-0.84
+±50% 125회,ridge,Rm·Bs,2.8257
+±50% 125회,ridge,Gm²,0.5398
+±50% 125회,ridge,Gm·Bm,2.3568
+±50% 125회,ridge,Gm·Rs,0.1275
+±50% 125회,ridge,Gm·Gs,-1.4488
+±50% 125회,ridge,Gm·Bs,2.88
+±50% 125회,ridge,Bm²,-1.6944
+±50% 125회,ridge,Bm·Rs,-2.2601
+±50% 125회,ridge,Bm·Gs,-2.1633
+±50% 125회,ridge,Bm·Bs,3.3062
+±50% 125회,ridge,Rs²,-5.0949
+±50% 125회,ridge,Rs·Gs,-0.8026
+±50% 125회,ridge,Rs·Bs,4.7285
+±50% 125회,ridge,Gs²,-2.6087
+±50% 125회,ridge,Gs·Bs,5.2386
+±50% 125회,ridge,Bs²,-1.0015
+±50% 125회,wls,상수 c,15.1237
+±50% 125회,wls,Rm,-0.5403
+±50% 125회,wls,Gm,3.0874
+±50% 125회,wls,Bm,-0.3432
+±50% 125회,wls,Rs,1.9756
+±50% 125회,wls,Gs,1.4353
+±50% 125회,wls,Bs,-1.9066
+±50% 125회,wls,Rm²,-2.3463
+±50% 125회,wls,Rm·Gm,2.0865
+±50% 125회,wls,Rm·Bm,2.3987
+±50% 125회,wls,Rm·Rs,-2.423
+±50% 125회,wls,Rm·Gs,-1.4327
+±50% 125회,wls,Rm·Bs,4.0826
+±50% 125회,wls,Gm²,0.844
+±50% 125회,wls,Gm·Bm,2.8816
+±50% 125회,wls,Gm·Rs,0.1354
+±50% 125회,wls,Gm·Gs,-0.8927
+±50% 125회,wls,Gm·Bs,1.9415
+±50% 125회,wls,Bm²,-2.304
+±50% 125회,wls,Bm·Rs,-5.04
+±50% 125회,wls,Bm·Gs,-3.6688
+±50% 125회,wls,Bm·Bs,7.2537
+±50% 125회,wls,Rs²,-8.2853
+±50% 125회,wls,Rs·Gs,-3.788
+±50% 125회,wls,Rs·Bs,11.5628
+±50% 125회,wls,Gs²,-3.8166
+±50% 125회,wls,Gs·Bs,11.4427
+±50% 125회,wls,Bs²,-4.9927
+±50% 125회,huber,상수 c,12.2205
+±50% 125회,huber,Rm,-0.9065
+±50% 125회,huber,Gm,1.5587
+±50% 125회,huber,Bm,0.682
+±50% 125회,huber,Rs,3.2407
+±50% 125회,huber,Gs,2.6408
+±50% 125회,huber,Bs,-2.0879
+±50% 125회,huber,Rm²,-2.3651
+±50% 125회,huber,Rm·Gm,2.046
+±50% 125회,huber,Rm·Bm,1.4308
+±50% 125회,huber,Rm·Rs,-2.0951
+±50% 125회,huber,Rm·Gs,-0.7686
+±50% 125회,huber,Rm·Bs,2.9505
+±50% 125회,huber,Gm²,0.6156
+±50% 125회,huber,Gm·Bm,2.3733
+±50% 125회,huber,Gm·Rs,0.9732
+±50% 125회,huber,Gm·Gs,-1.4576
+±50% 125회,huber,Gm·Bs,2.0527
+±50% 125회,huber,Bm²,-1.2861
+±50% 125회,huber,Bm·Rs,-3.3003
+±50% 125회,huber,Bm·Gs,-2.9499
+±50% 125회,huber,Bm·Bs,4.9143
+±50% 125회,huber,Rs²,-6.125
+±50% 125회,huber,Rs·Gs,-1.459
+±50% 125회,huber,Rs·Bs,6.4407
+±50% 125회,huber,Gs²,-2.2332
+±50% 125회,huber,Gs·Bs,6.0038
+±50% 125회,huber,Bs²,-2.1591
+±50% 125회,exclude,상수 c,11.9382
+±50% 125회,exclude,Rm,0.9053
+±50% 125회,exclude,Gm,-0.4471
+±50% 125회,exclude,Bm,0.6239
+±50% 125회,exclude,Rs,13.5337
+±50% 125회,exclude,Gs,-1.8161
+±50% 125회,exclude,Bs,-12.3597
+±50% 125회,exclude,Rm²,0.4012
+±50% 125회,exclude,Rm·Gm,3.9065
+±50% 125회,exclude,Rm·Bm,3.129
+±50% 125회,exclude,Rm·Rs,-2.0177
+±50% 125회,exclude,Rm·Gs,-0.8632
+±50% 125회,exclude,Rm·Bs,12.5157
+±50% 125회,exclude,Gm²,4.4325
+±50% 125회,exclude,Gm·Bm,-3.5866
+±50% 125회,exclude,Gm·Rs,12.2779
+±50% 125회,exclude,Gm·Gs,-6.2987
+±50% 125회,exclude,Gm·Bs,-2.7468
+±50% 125회,exclude,Bm²,-3.6384
+±50% 125회,exclude,Bm·Rs,-10.9071
+±50% 125회,exclude,Bm·Gs,-11.37
+±50% 125회,exclude,Bm·Bs,15.6008
+±50% 125회,exclude,Rs²,-26.8736
+±50% 125회,exclude,Rs·Gs,-6.2895
+±50% 125회,exclude,Rs·Bs,54.7371
+±50% 125회,exclude,Gs²,-3.7588
+±50% 125회,exclude,Gs·Bs,6.5603
+±50% 125회,exclude,Bs²,-18.0683
