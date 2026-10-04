@@ -52,14 +52,15 @@ def _search_kwargs(a):
     return dict(paper_mode=a.paper_mode, rel_broad=a.rel_broad, n_broad=a.n_broad,
                 rel_local=a.rel_local, n_local=a.n_local, max_evals=a.max_evals,
                 eps_best=a.eps_best, eps_pred=a.eps_pred, eps_stop=a.eps_stop,
-                r2_min=a.r2_min, seed=a.seed)
+                r2_min=a.r2_min, seed=a.seed,
+                fit=a.fit, ridge_lambda=a.ridge_lambda)
 
 
 def _mode_str(a):
     if a.paper_mode:
         return (f"논문 Figure 1 (adj0={0.5 if a.rel_broad is None else a.rel_broad}, "
                 f"adj_t={0.15 if a.rel_local is None else a.rel_local}, "
-                f"n_t={5 if a.n_local is None else a.n_local}, eps_stop={a.eps_stop}, 경계 없음)")
+                f"n_t={5 if a.n_local is None else a.n_local}, eps_stop={a.eps_stop}, fit={a.fit}, 경계 없음)")
     return (f"우리 변형 (±{0.10 if a.rel_broad is None else a.rel_broad} 상자, "
             f"±{0.03 if a.rel_local is None else a.rel_local}, AND 종료)")
 
@@ -459,6 +460,9 @@ def _add_search_args(p):
     p.add_argument("--r2-min", type=float, default=None,
                    help="논문 모드: (e)를 만족해도 R2가 이 값 미만이면 계속 (본문 3.3절, 기본 꺼짐)")
     p.add_argument("--eps-stop", type=float, default=0.0, help="논문 모드 종료 임계값 (Figure 1: ≈0)")
+    p.add_argument("--fit", choices=["ols", "ridge"], default="ols",
+                   help="논문 모드 계수 추정: ols(기본) / ridge(회차마다 LOO로 λ 선택)")
+    p.add_argument("--ridge-lambda", type=float, default=None, help="ridge λ 고정값 (기본: LOO 선택)")
     p.add_argument("--eps-best", type=float, default=0.1, help="우리 모드 종료 임계값 1")
     p.add_argument("--eps-pred", type=float, default=1.0, help="우리 모드 종료 임계값 2")
 

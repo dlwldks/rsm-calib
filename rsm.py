@@ -19,10 +19,24 @@ def quad_features(Z: np.ndarray) -> np.ndarray:
     return np.column_stack(cols)
 
 
+def _ridge(A, y, lam):
+    """Ridge 닫힌 해 (상수항 벌점 없음). 반환: 계수, hat 행렬 대각(LOO용)."""
+    D = np.eye(A.shape[1])
+    D[0, 0] = 0.0
+    Minv = np.linalg.pinv(A.T @ A + lam * D)
+    beta = Minv @ (A.T @ y)
+    h = np.einsum("ij,jk,ik->i", A, Minv, A)
+    return beta, h
+
+
 class QuadraticRSM:
     """IoU = f(theta) 2차 회귀. 수치 안정성을 위해 표준화 좌표 z에서 피팅."""
 
-    def fit(self, X, y):
+    RIDGE_GRID = np.logspace(-3, 2, 26)   # 0.001 ~ 100
+
+    def fit(self, X, y, method="ols", lam=None):
+        """method: "ols" = 최소제곱 (논문, 기본) / "ridge" = 상수항 제외 계수에 lam*|b|^2 벌점.
+        ridge에서 lam=None이면 RIDGE_GRID 중 LOO 오차가 가장 작은 값을 고른다."""
         X, y = np.asarray(X, float), np.asarray(y, float)
         n, d = X.shape
         p = n_min(d)
@@ -33,7 +47,22 @@ class QuadraticRSM:
         self.scale = X.std(0)
         self.scale[self.scale == 0] = 1.0
         A = quad_features((X - self.center) / self.scale)
-        self.beta, *_ = np.linalg.lstsq(A, y, rcond=None)
+        self.method, self.lam = method, None
+        if method == "ols":
+            self.beta, *_ = np.linalg.lstsq(A, y, rcond=None)
+        elif method == "ridge":
+            grid = self.RIDGE_GRID if lam is None else [lam]
+            best = None
+            for g in grid:
+                b, h = _ridge(A, y, g)
+                r = y - A @ b
+                ok = h < 1 - 1e-8
+                loo = float(np.sqrt(np.mean((r[ok] / (1 - h[ok])) ** 2))) if ok.any() else np.inf
+                if best is None or loo < best[0]:
+                    best = (loo, g, b)
+            self.loo, self.lam, self.beta = best
+        else:
+            raise ValueError(f"fit method {method}")
 
         resid = y - A @ self.beta
         ss_res, ss_tot = float(resid @ resid), float(((y - y.mean()) ** 2).sum())
@@ -90,7 +119,8 @@ class QuadraticRSM:
     def summary(self):
         _, kind = self.stationary_point()
         return dict(n=self.n, r2=self.r2, adj_r2=self.adj_r2, F=self.F,
-                    p_value=self.p_value, stationary_kind=kind)
+                    p_value=self.p_value, stationary_kind=kind,
+                    fit=getattr(self, "method", "ols"), ridge_lambda=getattr(self, "lam", None))
 
 
 def proportional_transfer(theta_a_base, theta_b_base, theta_b_best):

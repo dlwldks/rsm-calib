@@ -52,8 +52,11 @@ def neighborhood(center, adj, n, rng, include_center=True):
 
 # ------------------------------------------------------------------ 논문 방식
 def rsm_search_paper(objective, theta0, adj0=0.5, n0=30, adj_t=0.15, n_t=5,
-                     eps_stop=0.0, max_evals=80, r2_min=None, seed=0, verbose=True):
+                     eps_stop=0.0, max_evals=80, r2_min=None, seed=0, verbose=True,
+                     fit="ols", ridge_lambda=None):
     """논문 Figure 1.
+
+    fit: 계수 추정 방법. "ols"(최소제곱, 기본) / "ridge"(회차마다 LOO로 λ 선택, ridge_lambda 주면 고정).
 
     (b1) Iteration_0 : C_0 = Neighborhood(theta0; ±adj0, n0)  -> 추론, 로그 S에 추가
     (f)(g)           : S 전체로 2차식 피팅 -> grad f = 0 인 정상점 theta_hat, IoU_pred = f(theta_hat)
@@ -99,7 +102,7 @@ def rsm_search_paper(objective, theta0, adj0=0.5, n0=30, adj_t=0.15, n_t=5,
 
     while len(Y) < max_evals:
         t += 1
-        model = QuadraticRSM().fit(np.array(X), np.array(Y))
+        model = QuadraticRSM().fit(np.array(X), np.array(Y), fit, ridge_lambda)
         theta_raw, kind = model.stationary_point()
         theta_hat = physical_clip(theta_raw)
         clipped = bool(not np.allclose(theta_raw, theta_hat))
@@ -112,10 +115,12 @@ def rsm_search_paper(objective, theta0, adj0=0.5, n0=30, adj_t=0.15, n_t=5,
         history.append(dict(iter=t, evals=len(Y), stationary_kind=kind, theta_hat=theta_hat,
                             theta_hat_raw=theta_raw, clipped=clipped,
                             iou_pred=y_pred, iou_best_iter=best_t, eps1=e1, eps2=e2,
-                            r2=model.r2, adj_r2=model.adj_r2))
+                            r2=model.r2, adj_r2=model.adj_r2,
+                            ridge_lambda=getattr(model, 'lam', None)))
         if verbose:
             print(f"      -> [{kind}{', clipped' if clipped else ''}] pred={y_pred:.2f} "
-                  f"iter_best={best_t:.2f} eps1={e1:+.3f} eps2={e2:.3f} R2={model.r2:.3f}")
+                  f"iter_best={best_t:.2f} eps1={e1:+.3f} eps2={e2:.3f} R2={model.r2:.3f}"
+                  + (f" λ={model.lam:.3g}" if fit == "ridge" else ""))
         if e1 <= eps_stop or e2 <= eps_stop:
             if r2_min is not None and model.r2 < r2_min:
                 if verbose:
@@ -125,7 +130,7 @@ def rsm_search_paper(objective, theta0, adj0=0.5, n0=30, adj_t=0.15, n_t=5,
                 break
         best_prev = best_t
 
-    final = QuadraticRSM().fit(np.array(X), np.array(Y))
+    final = QuadraticRSM().fit(np.array(X), np.array(Y), fit, ridge_lambda)
     i = int(np.argmax(Y))
     return dict(theta_base=theta0, theta_best=X[i], iou_base=Y[0], iou_best=Y[i],
                 theta_rsm=physical_clip(final.stationary_point()[0]),
@@ -133,7 +138,8 @@ def rsm_search_paper(objective, theta0, adj0=0.5, n0=30, adj_t=0.15, n_t=5,
                 rsm=final.summary(), history=history, bounds=physical_bounds(d),
                 paper_mode=True, stop_reason=stop_reason,
                 settings=dict(adj0=adj0, n0=n0, adj_t=adj_t, n_t=n_t, eps_stop=eps_stop,
-                              max_evals=max_evals, r2_min=r2_min, seed=seed))
+                              max_evals=max_evals, r2_min=r2_min, seed=seed,
+                              fit=fit, ridge_lambda=ridge_lambda))
 
 
 # ------------------------------------------------------------------ 우리 방식
@@ -201,7 +207,7 @@ def rsm_search_ours(objective, theta0, rel_broad=0.10, n_broad=30, rel_local=0.0
 
 def rsm_search(objective, theta0, paper_mode=False, rel_broad=None, n_broad=30,
                rel_local=None, n_local=None, max_evals=None, eps_best=0.1, eps_pred=1.0,
-               eps_stop=0.0, r2_min=None, seed=0, verbose=True):
+               eps_stop=0.0, r2_min=None, seed=0, verbose=True, fit="ols", ridge_lambda=None):
     """모드별 기본값: 논문 adj0=0.5, adj_t=0.15, n_t=5, 상한 80 / 우리 ±0.10, ±0.03, 6, 상한 60."""
     if max_evals is None:
         max_evals = 80 if paper_mode else 60
@@ -211,7 +217,10 @@ def rsm_search(objective, theta0, paper_mode=False, rel_broad=None, n_broad=30,
             adj0=0.5 if rel_broad is None else rel_broad, n0=n_broad,
             adj_t=0.15 if rel_local is None else rel_local,
             n_t=5 if n_local is None else n_local,
-            eps_stop=eps_stop, max_evals=max_evals, r2_min=r2_min, seed=seed, verbose=verbose)
+            eps_stop=eps_stop, max_evals=max_evals, r2_min=r2_min, seed=seed, verbose=verbose,
+            fit=fit, ridge_lambda=ridge_lambda)
+    if fit != "ols":
+        raise ValueError("--fit ridge는 --paper-mode에서만 지원")
     return rsm_search_ours(
         objective, theta0,
         rel_broad=0.10 if rel_broad is None else rel_broad, n_broad=n_broad,
