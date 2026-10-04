@@ -131,9 +131,31 @@ def fig_candidates():
     fig.savefig(RES / "fig_candidate_iou.png", dpi=160)
 
 
+def fig_order_by_n():
+    """관측 수 n에 따른 1차·2차 LOO 오차 (order_by_n.csv, 탐색 순서대로 앞에서부터 n개)."""
+    t = pd.read_csv(RES / "order_by_n.csv")
+    t = t[t["sample"] == "앞에서부터"]
+    fig, ax = plt.subplots(figsize=(8, 4.4))
+    for k, (col, lab) in enumerate((("linear", "1차 (계수 7)"), ("quad_diag", "2차 교차항 없음 (13)"),
+                                    ("quad", "2차 논문 식 1 (28)"))):
+        ax.plot(t.n, t[col], color=SERIES[k], lw=2, marker="o", ms=5, label=lab, zorder=3)
+    ax.plot(t.n, t["mean"], color=INK2, lw=1.2, ls=(0, (4, 3)), label="평균값만으로 예측")
+    ax.axvspan(40, 50, color="#e4e3df", zorder=1)
+    ax.text(45, 17.2, "논문 본문\n40~50회", ha="center", va="top", fontsize=8, color=INK2)
+    ax.set_ylim(5, 18.5)
+    ax.set_xlabel("회귀에 쓴 관측 수 n (±50% 탐색 기록, 탐색 순서대로 앞에서부터)")
+    ax.set_ylabel("LOO RMSE (IoU %p)")
+    ax.set_title("논문 식 1은 관측 70개부터 오차가 가장 작다", loc="left", fontsize=11.5)
+    style(ax)
+    ax.legend(frameon=False, fontsize=8.5, loc="upper right")
+    fig.tight_layout()
+    fig.savefig(RES / "fig_order_by_n.png", dpi=160)
+
+
 if __name__ == "__main__":
     setup()
     fig_loo()
     fig_pred_actual()
     fig_candidates()
+    fig_order_by_n()
     print("저장:", *sorted(p.name for p in RES.glob("fig_*.png")))
