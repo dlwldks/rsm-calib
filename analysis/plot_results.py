@@ -152,10 +152,43 @@ def fig_order_by_n():
     fig.savefig(RES / "fig_order_by_n.png", dpi=160)
 
 
+def fig_loo_by_order():
+    """1~4차 식별 LOO 오차 (order_summary_e2.csv + 125회 기록), 평균값 예측 기준선."""
+    o = pd.read_csv(RES / "order_summary_e2.csv")
+    lab = {"out_e2_test50_adj10/trials_c5.csv": "±10%", "out_e2_test50_adj0.25/trials_c5.csv": "±25%",
+           "out_e2_test50/trials_c5.csv": "±50%"}
+    o["rec"] = o["data"].map(lab)
+    n125 = {"linear": 7.73, "quad_diag": 7.51, "cubic_diag": 7.89, "quartic_diag": 9.00, "quad": 6.79}
+    base = {"±10%": 6.68, "±25%": 10.10, "±50%": 8.60, "±50% 125회": 7.91}
+    kinds = [("linear", "1차 (7)"), ("quad_diag", "2차 교차항 없음 (13)"), ("cubic_diag", "3차 교차항 없음 (19)"),
+             ("quartic_diag", "4차 교차항 없음 (25)"), ("quad", "2차 논문 식 1 (28)")]
+    cap, w, gap = 25, 0.15, 0.02
+    fig, ax = plt.subplots(figsize=(9, 4.6))
+    for j, (k, name) in enumerate(kinds):
+        for i, r in enumerate(RECORDS):
+            v = n125[k] if r == "±50% 125회" else float(o[(o.rec == r) & (o.model == k)].loo_rmse.iloc[0])
+            x = i + (j - 2) * (w + gap)
+            ax.bar(x, min(v, cap), w, color=SERIES[j], label=name if i == 0 else None, zorder=2)
+            if v > cap:
+                ax.text(x, cap + 0.3, f"{v:.0f}↑", ha="center", va="bottom", fontsize=8, color=INK2)
+    for i, r in enumerate(RECORDS):
+        ax.hlines(base[r], i - 0.45, i + 0.45, colors=INK, lw=1.2, ls=(0, (4, 3)), zorder=3,
+                  label="평균값만으로 예측" if i == 0 else None)
+    ax.set_xticks(range(len(RECORDS)), [f"{r}\n(표본 {125 if '125' in r else 35}개)" for r in RECORDS])
+    ax.set_ylim(0, cap + 3)
+    ax.set_ylabel("LOO RMSE (IoU %p, 낮을수록 좋음)")
+    ax.set_title("1~4차 비교 (모두 최소제곱): 좁은 범위는 1차, 표본 125개는 논문 식 1이 가장 낮음", loc="left", fontsize=11)
+    style(ax)
+    ax.legend(ncol=3, fontsize=8.5, frameon=False, loc="upper left", bbox_to_anchor=(0, -0.16))
+    fig.tight_layout()
+    fig.savefig(RES / "fig_loo_by_order.png", dpi=160)
+
+
 if __name__ == "__main__":
     setup()
     fig_loo()
     fig_pred_actual()
     fig_candidates()
     fig_order_by_n()
+    fig_loo_by_order()
     print("저장:", *sorted(p.name for p in RES.glob("fig_*.png")))
