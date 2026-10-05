@@ -237,6 +237,23 @@ def cmd_inspect(a):
 
 
 # ------------------------------------------------------------------ calibrate
+def _log_wrap(objective, path):
+    """새로 추론한 결과만 path 에 한 줄씩 덧붙임 (재사용한 값은 이미 있으므로 다시 안 씀)."""
+    import pandas as pd
+    seen = pd.read_csv(path)[NAMES].to_numpy(float) if path.stat().st_size > 0 else np.zeros((0, 6))
+    seen = [r for r in seen]
+
+    def wrapped(theta):
+        y = objective(theta)
+        t = np.asarray(theta, float)
+        if not any(np.abs(r - t).max() <= 1e-6 for r in seen):
+            with open(path, "a", newline="") as f:
+                csv.writer(f).writerow([repr(float(v)) for v in t] + [repr(float(y))])
+            seen.append(t)
+        return y
+    return wrapped
+
+
 def _reuse_wrap(objective, path, tol=1e-3):
     """이전 실행 trials csv(소수 4자리 저장)에 같은 theta(차이 tol 이하)가 있으면 그 IoU를 돌려줌.
     재시작 등으로 끊긴 탐색을 다시 돌릴 때 앞부분 추론을 건너뛰는 용도. 조건(데이터·클래스·seed)이 같아야 함."""
@@ -281,6 +298,15 @@ def cmd_calibrate(a):
 
         if a.reuse:  # 같은 조건의 이전 trials csv에서 같은 theta는 추론 없이 기록값 사용
             objective = _reuse_wrap(objective, a.reuse)
+        # 추론할 때마다 기록 (끊겨도 --resume 으로 이어서 돌릴 수 있게)
+        prog = out / f"progress_c{c}.csv"
+        if a.resume and prog.exists() and prog.stat().st_size > 0:
+            print(f"[resume] {prog} 기록 재사용")
+            objective = _reuse_wrap(objective, str(prog), tol=1e-6)
+        else:
+            with open(prog, "w", newline="") as f:
+                csv.writer(f).writerow(NAMES + ["iou"])
+        objective = _log_wrap(objective, prog)
 
         res = rsm_search(objective, theta0, **_search_kwargs(a))
         delta = res["iou_best"] - base_iou
@@ -495,6 +521,7 @@ def _add_search_args(p):
     p.add_argument("--ridge-lambda", type=float, default=None, help="ridge λ 고정값 (기본: LOO 선택)")
     p.add_argument("--move", choices=["stationary", "boxmax"], default="stationary",
                    help="논문 모드 이동: stationary(논문) / boxmax(정상점이 극대가 아니면 1단계 범위 안 최대점, 우리 변형)")
+    p.add_argument("--resume", action="store_true", help="--out 폴더의 progress_c*.csv 기록을 재사용해 끊긴 탐색 이어가기 (같은 seed·조건)")
     p.add_argument("--reuse", default=None, help="이전 trials csv: 같은 theta는 추론 없이 기록값 사용 (끊긴 탐색 재개용)")
     p.add_argument("--eps-best", type=float, default=0.1, help="우리 모드 종료 임계값 1")
     p.add_argument("--eps-pred", type=float, default=1.0, help="우리 모드 종료 임계값 2")
