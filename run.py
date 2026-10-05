@@ -390,7 +390,8 @@ def cmd_broad(a):
     model = _setup_model(a)
     summary = []
     for c in a.targets:
-        idx = _tiles_with(msks, c)
+        # --calib-tiles all: calibrate 의 --calib-tiles all 과 같은 타일(전체)로 맞춤 (무작위 대조군 E4-R 용)
+        idx = np.arange(len(msks)) if getattr(a, "calib_tiles", "target") == "all" else _tiles_with(msks, c)
         print(f"\n##### 클래스 {c}: 대상 타일 {len(idx)}개, adj0={a.adjs}, 각 {a.n_broad}회")
         ev = Evaluator(model, imgs[idx], a.n_classes, a.batch, a.device, a.threads)
         theta0 = _base_theta(a, imgs[idx])
@@ -573,6 +574,8 @@ def main():
     b.add_argument("--targets", "--target", type=int, nargs="+", required=True)
     b.add_argument("--adjs", type=float, nargs="+", default=[0.10, 0.25, 0.50])
     b.add_argument("--n-broad", type=int, default=30)
+    b.add_argument("--calib-tiles", choices=["target", "all"], default="target",
+                   help="target: 대상 클래스가 있는 타일만(기존), all: 전체 타일 (calibrate --calib-tiles all 과 같은 조건)")
     b.add_argument("--out", default="out_broad")
 
     ap = sub.add_parser("apply", parents=[common])
