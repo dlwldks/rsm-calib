@@ -4,6 +4,8 @@
     fig_loo_by_method.png      방법별 LOO 오차 (기록 4개), 평균값 예측 기준선
     fig_pred_vs_actual.png     후보 theta의 식 예측 IoU vs 실제 IoU
     fig_candidate_iou.png      후보 theta의 실제 IoU, 탐색 최고값 범위 표시
+
+보고서 2.6·3.2·3.3·6.1의 그래프
 """
 from pathlib import Path
 
@@ -24,6 +26,7 @@ SEARCH_BEST = {"±10%": 29.34, "±25%": 29.10, "±50%": 29.50, "±50% 125회": 2
 
 
 def setup():
+    """한글 폰트와 공통 색·글자 크기를 설정한다."""
     for name in ("Noto Sans CJK KR", "Noto Sans CJK JP", "NanumGothic", "Malgun Gothic", "AppleGothic"):
         if any(name in f.name for f in font_manager.fontManager.ttflist):
             plt.rcParams["font.family"] = name
@@ -34,6 +37,7 @@ def setup():
 
 
 def style(ax):
+    """축 공통 스타일: 가로 격자, 위·오른쪽 테두리 제거."""
     ax.grid(axis="y", color=GRID, lw=0.8)
     ax.set_axisbelow(True)
     for s in ("top", "right"):
@@ -41,6 +45,7 @@ def style(ax):
 
 
 def fig_loo():
+    """방법별 LOO 오차 막대그래프 (기록 4개, 평균값 예측 기준선 표시) -> fig_loo_by_method.png."""
     s = pd.read_csv(RES / "solver_summary.csv")
     base = {"±10%": 6.68, "±25%": 10.10, "±50%": 8.60, "±50% 125회": 7.91}   # 평균값만으로 예측한 LOO
     cap = 25
@@ -71,6 +76,7 @@ def fig_loo():
 
 
 def fig_pred_actual():
+    """후보 θ의 식 예측 IoU(가로)와 실제 IoU(세로) 산점도 -> fig_pred_vs_actual.png."""
     d = pd.read_csv(RES / "reinfer_iou.csv")
     d = d[~d.method.isin(["theta0", "check"]) & d.iou.notna()]
     fig, ax = plt.subplots(figsize=(7, 5))
@@ -93,6 +99,7 @@ def fig_pred_actual():
 
 
 def fig_candidates():
+    """방법·점 종류별 후보 θ의 실제 IoU, 탐색 최고 범위와 기준값 표시 -> fig_candidate_iou.png."""
     d = pd.read_csv(RES / "reinfer_iou.csv")
     d = d[~d.method.isin(["theta0", "check"])]
     rows = [(m, p) for m in METHODS for p in ("stationary", "boxmax")]

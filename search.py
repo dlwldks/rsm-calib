@@ -1,8 +1,13 @@
-"""RSM 순차 탐색.
+"""RSM 순차 탐색. 최적 θ(입력 정규화 값 6개)를 U-Net 추론을 반복하며 찾는다.
 
-rsm_search_paper : 논문 Figure 1 그대로 (--paper-mode)
-rsm_search_ours  : 우리 변형 (탐색 상자 고정, 상자 안 곡면 최댓값, AND 종료)
-broad_sweep      : 1단계(Iteration_0)만 탐색 폭별로 돌려 비교
+objective(θ)는 "θ로 정규화해 U-Net을 돌린 뒤 대상 클래스 IoU(%)를 돌려주는 함수"다(run.py에서 만듦).
+추론 1회 = objective 호출 1회.
+
+rsm_search_paper    : 논문 Figure 1 그대로 (--paper-mode). 옵션으로 Ridge·범위 내 최대점 이동·R² 조건
+rsm_search_steepest : 고전 RSM 순서 (1차식 최급상승 → 봉우리 근처에서 2차식) (--steepest, 우리 변형)
+rsm_search_ours     : 초기 우리 변형 (탐색 상자 고정, 상자 안 곡면 최댓값, AND 종료)
+rsm_search          : 위 셋 중 하나를 고르는 진입점
+broad_sweep         : 1단계(Iteration_0)만 탐색 폭별로 돌려 비교 (adj0 해석 확인용)
 """
 import numpy as np
 
@@ -24,6 +29,7 @@ def lhs(n, d, rng):
 
 
 def physical_bounds(d):
+    """θ의 물리적 하한·상한. 앞 절반(평균)은 0~255, 뒤 절반(표준편차)은 1~255."""
     b = d // 2
     lo = np.array([MEAN_RANGE[0]] * b + [STD_RANGE[0]] * (d - b))
     hi = np.array([MEAN_RANGE[1]] * b + [STD_RANGE[1]] * (d - b))
@@ -31,6 +37,7 @@ def physical_bounds(d):
 
 
 def physical_clip(theta):
+    """θ를 물리적 범위 안으로 자른다 (평균이 음수, 표준편차가 0 이하가 되는 것을 막음)."""
     lo, hi = physical_bounds(len(theta))
     return np.clip(np.asarray(theta, float), lo, hi)
 
@@ -79,12 +86,14 @@ def rsm_search_paper(objective, theta0, adj0=0.5, n0=30, adj_t=0.15, n_t=5,
     rng = np.random.default_rng(seed)
     theta0 = np.asarray(theta0, float)
     d = len(theta0)
-    n0 = max(n0, n_min(d) + 2)
+    n0 = max(n0, n_min(d) + 2)           # 1단계 표본 수는 최소 28 + 2 = 30
+    # move="boxmax"에서 쓰는 이동 범위 = 1단계 탐색 범위 θ0 × (1 ± adj0)
     box_lo = physical_clip(theta0 * (1 - adj0))
     box_hi = physical_clip(theta0 * (1 + adj0))
-    X, Y, IT = [], [], []
+    X, Y, IT = [], [], []                # 로그 S: θ, IoU, 회차 번호
 
     def run_batch(cands, t):
+        """후보 θ들을 차례로 추론해 로그 S에 추가한다. 추론 상한(max_evals)에 닿으면 멈춤."""
         ys = []
         for k, th in enumerate(cands):
             if len(Y) >= max_evals:
@@ -100,22 +109,27 @@ def rsm_search_paper(objective, theta0, adj0=0.5, n0=30, adj_t=0.15, n_t=5,
                       flush=True)
         return ys
 
+    # (b1) Iteration_0: θ0 주변 넓은 범위(±adj0)에서 n0개 추론
     ys = run_batch(neighborhood(theta0, adj0, n0, rng), 0)
     best_prev = max(ys)
     history, stop_reason, t = [], "max_evals", 0
 
     while len(Y) < max_evals:
         t += 1
+        # (f) 지금까지의 로그 S 전체로 2차식(식 1) 피팅
         model = QuadraticRSM().fit(np.array(X), np.array(Y), fit, ridge_lambda)
+        # (g) 정상점 θ̂ (식 3). 우리 변형: 극대가 아니면 범위 내 최대점으로 이동
         theta_raw, kind = model.stationary_point()
         if move == "boxmax" and kind != "max":
             theta_raw, kind = model.maximize(box_lo, box_hi)
         theta_hat = physical_clip(theta_raw)
         clipped = bool(not np.allclose(theta_raw, theta_hat))
-        y_pred = float(model.predict(theta_hat)[0])
+        y_pred = float(model.predict(theta_hat)[0])      # IoU_pred = f(θ̂)
+        # (bt) Iteration_t: θ̂ 주변 좁은 범위(±adj_t)에서 n_t개 추론 (첫 점 = θ̂)
         ys = run_batch(neighborhood(theta_hat, adj_t, n_t, rng), t)
         if not ys:
             break
+        # (d1) 회차 최고 개선폭, (d2) 회차 최고와 예측의 차이
         best_t = max(ys)
         e1, e2 = best_t - best_prev, abs(best_t - y_pred)
         history.append(dict(iter=t, evals=len(Y), stationary_kind=kind, theta_hat=theta_hat,
@@ -127,6 +141,7 @@ def rsm_search_paper(objective, theta0, adj0=0.5, n0=30, adj_t=0.15, n_t=5,
             print(f"      -> [{kind}{', clipped' if clipped else ''}] pred={y_pred:.2f} "
                   f"iter_best={best_t:.2f} eps1={e1:+.3f} eps2={e2:.3f} R2={model.r2:.3f}"
                   + (f" λ={model.lam:.3g}" if fit == "ridge" else ""))
+        # (e) 종료 판정: e1 또는 e2가 ε_stop 이하이면 종료 (r2_min을 켰으면 R²도 확인)
         if e1 <= eps_stop or e2 <= eps_stop:
             if r2_min is not None and model.r2 < r2_min:
                 if verbose:
@@ -136,6 +151,7 @@ def rsm_search_paper(objective, theta0, adj0=0.5, n0=30, adj_t=0.15, n_t=5,
                 break
         best_prev = best_t
 
+    # 출력: θ_opt = 로그 S 전체에서 IoU가 가장 높았던 θ (식의 예측값이 아니라 실제 추론값 기준)
     final = QuadraticRSM().fit(np.array(X), np.array(Y), fit, ridge_lambda)
     i = int(np.argmax(Y))
     return dict(theta_base=theta0, theta_best=X[i], iou_base=Y[0], iou_best=Y[i],
@@ -174,6 +190,7 @@ def rsm_search_steepest(objective, theta0, a1=0.10, n1=10, step=0.5, max_path=10
     X, Y, IT, TAG = [], [], [], []
 
     def ev(th, it, tag):
+        """θ 하나를 추론해 기록한다. tag는 표본이 어느 단계에서 나왔는지 표시."""
         th = physical_clip(th)
         y = float(objective(th))
         X.append(th)
@@ -198,6 +215,7 @@ def rsm_search_steepest(objective, theta0, a1=0.10, n1=10, step=0.5, max_path=10
             ys_box.append(ev(th, cyc, f"c{cyc}-box"))
         if full():
             break
+        # 코드 좌표 x = (θ − 중심) / (중심 × a1) 에서 1차식 y = b0 + bᵀx 를 최소제곱으로 맞춤
         Xb = np.array(X[-len(ys_box):])
         scale = center * a1
         Zb = (Xb - center) / scale
@@ -206,13 +224,13 @@ def rsm_search_steepest(objective, theta0, a1=0.10, n1=10, step=0.5, max_path=10
         fitted = A @ beta
         tss = float(((np.array(ys_box) - np.mean(ys_box)) ** 2).sum())
         r2_lin = 1 - float(((np.array(ys_box) - fitted) ** 2).sum()) / tss if tss > 0 else np.nan
-        g = beta[1:]
+        g = beta[1:]                       # 기울기 = IoU가 가장 빨리 오르는 방향
         gnorm = float(np.linalg.norm(g))
         dirn = g / gnorm if gnorm > 0 else np.zeros(d)
         if verbose:
             print(f"      -> cycle{cyc} 1차식 R2={r2_lin:.3f} |grad|={gnorm:.2f} "
                   f"방향(코드 좌표)={np.round(dirn, 2).tolist()}")
-        # 최급상승 경로
+        # 최급상승 경로: 중심에서 기울기 방향으로 step씩 걸으며 추론, IoU가 떨어지면 멈춤
         path_y, path_th, prev = [], [], ys_box[0]
         for k in range(1, max_path + 1):
             if full():
@@ -249,6 +267,7 @@ def rsm_search_steepest(objective, theta0, a1=0.10, n1=10, step=0.5, max_path=10
             if full():
                 break
             ev(th, max_cycles + 1, "quad-box")
+        # 2차식은 새 상자 안에 있는 표본만으로 맞춘다 (먼 곳의 1차 단계 표본은 제외)
         Xa, Ya = np.array(X), np.array(Y)
         inbox = np.all((Xa >= lo - 1e-9) & (Xa <= hi + 1e-9), axis=1)
         if inbox.sum() >= n_min(d) + 1 and not full():
@@ -311,6 +330,7 @@ def rsm_search_ours(objective, theta0, rel_broad=0.10, n_broad=30, rel_local=0.0
             print(f"[{len(Y):3d}] {tag:<24} IoU={y:6.2f}  best={max(Y):6.2f}", flush=True)
         return y
 
+    # 1단계: θ0와 상자 안 LHS 표본
     ev(theta0, "base", 0)
     for u in lhs(n_broad - 1, d, rng):
         ev(lo + u * (hi - lo), "broad", 0)
@@ -318,6 +338,7 @@ def rsm_search_ours(objective, theta0, rel_broad=0.10, n_broad=30, rel_local=0.0
     best_prev, history, stop_reason, it = max(Y), [], "max_evals", 0
     while len(Y) < max_evals:
         it += 1
+        # 상자 안 곡면 최댓값으로 이동해 추론하고, 그 주변 ±rel_local에서 n_local개 추가
         model = QuadraticRSM().fit(np.array(X), np.array(Y))
         x_hat, how = model.maximize(lo, hi)
         x_hat = np.clip(x_hat, lo, hi)
@@ -354,7 +375,14 @@ def rsm_search(objective, theta0, paper_mode=False, rel_broad=None, n_broad=30,
                rel_local=None, n_local=None, max_evals=None, eps_best=0.1, eps_pred=1.0,
                eps_stop=0.0, r2_min=None, seed=0, verbose=True, fit="ols", ridge_lambda=None,
                move="stationary", steepest=False):
-    """모드별 기본값: 논문 adj0=0.5, adj_t=0.15, n_t=5, 상한 80 / 우리 ±0.10, ±0.03, 6, 상한 60."""
+    """탐색 방식을 골라 실행하는 진입점 (run.py가 호출).
+
+    steepest=True  -> rsm_search_steepest (고전 RSM 순서)
+    paper_mode=True -> rsm_search_paper (논문 Figure 1)
+    둘 다 아니면    -> rsm_search_ours (초기 우리 변형)
+    모드별 기본값: 논문 adj0=0.5, adj_t=0.15, n_t=5, 상한 80 / 우리 ±0.10, ±0.03, 6, 상한 60.
+    run.py의 --rel-broad, --rel-local, --n-local 이 주어지면 그 값이 adj0, adj_t, n_t 로 들어간다.
+    """
     if max_evals is None:
         max_evals = 80 if (paper_mode or steepest) else 60
     if steepest:
@@ -382,6 +410,9 @@ def rsm_search(objective, theta0, paper_mode=False, rel_broad=None, n_broad=30,
 # ------------------------------------------------------------------ 1단계 폭 비교
 def broad_sweep(objective, theta0, adjs=(0.10, 0.25, 0.50), n=30, seed=0, verbose=True):
     """Iteration_0만 탐색 폭(adj0)별로 실행. 모든 폭에서 같은 seed(같은 LHS 패턴)를 씀.
+
+    논문 "adj0 ≈ 0.5"가 ±50%인지 다른 뜻인지 정하려고, ±10·25·50%에서 IoU 분포와
+    붕괴 표본(IoU < 5) 수를 비교할 때 썼다(실험 #2).
     반환: {adj: (X, Y)}"""
     out = {}
     for adj in adjs:

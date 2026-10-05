@@ -15,6 +15,8 @@
     class_freq.csv   클래스별 픽셀 수·비율 (train / test)
     metadata.json    카메라·촬영 연도·월 분포 (메타데이터 json이 있을 때)
     summary.md       위 내용을 표로 정리
+
+보고서 4장(데이터 명세), 5.3(채널 통계)
 """
 import argparse
 import json
@@ -41,16 +43,19 @@ RE_ZONE = re.compile(r"^Z\d+_[A-Za-z]+$")
 
 # ------------------------------------------------------------------ discovery
 def tile_id(p):
+    """파일 이름의 마지막 숫자 = 타일 번호 (IMG_000123 -> 000123)."""
     nums = re.findall(r"\d+", p.stem)
     return nums[-1] if nums else p.stem
 
 
 def split_of(p):
+    """경로에 "test"가 있으면 test, 아니면 train."""
     parts = [s.lower() for s in p.parts]
     return "test" if any("test" in s for s in parts) else "train"
 
 
 def domain_zone(p):
+    """경로에서 도메인(D004_2021 형식)과 zone(Z14_AU 형식) 폴더 이름을 찾는다."""
     dom = zone = ""
     for s in p.parts:
         if RE_DOMAIN.match(s):
@@ -61,6 +66,7 @@ def domain_zone(p):
 
 
 def discover(root):
+    """root 아래 모든 IMG_*.tif, MSK_*.tif를 (split, 타일 번호) 키로 모은다."""
     imgs, msks = {}, {}
     for p in root.rglob("IMG_*.tif"):
         imgs[(split_of(p), tile_id(p))] = p
@@ -71,6 +77,7 @@ def discover(root):
 
 # ------------------------------------------------------------------ workers
 def read_img(path):
+    """영상 1장의 규격(크기·밴드 수·dtype·CRS·해상도)과 밴드별 합·제곱합·최소·최대를 읽는다."""
     import rasterio
     with rasterio.open(path) as src:
         a = src.read()
@@ -89,6 +96,7 @@ def read_img(path):
 
 
 def read_msk(path):
+    """마스크 1장의 규격과 값(0~255)별 픽셀 수 히스토그램을 읽는다."""
     import rasterio
     with rasterio.open(path) as src:
         a = src.read(1)
@@ -98,6 +106,7 @@ def read_msk(path):
 
 
 def work(job):
+    """병렬 작업 1건: ("img"|"msk", 키, 경로) -> 읽기 결과. 깨진 파일은 오류 문자열로 돌려준다."""
     kind, key, path = job
     try:
         return kind, key, (read_img if kind == "img" else read_msk)(path), None
@@ -109,10 +118,12 @@ def work(job):
 class Acc:
     """밴드별 합·제곱합·최솟값·최댓값 누적."""
     def __init__(self):
+        """누적값을 비운 상태로 시작한다."""
         self.n = 0
         self.s = self.ss = self.mn = self.mx = None
 
     def add(self, r):
+        """영상 1장의 밴드별 합계를 더한다. 밴드 수가 다른 영상은 건너뛴다."""
         if self.s is None:
             self.s, self.ss = r["sum"].copy(), r["sumsq"].copy()
             self.mn, self.mx = r["min"].copy(), r["max"].copy()
@@ -124,12 +135,14 @@ class Acc:
         self.n += r["n"]
 
     def stats(self):
+        """누적값으로 밴드별 평균·표준편차·최소·최대를 계산한다."""
         mean = self.s / self.n
         std = np.sqrt(np.maximum(self.ss / self.n - mean ** 2, 0))
         return mean, std, self.mn, self.mx
 
 
 def write_csv(path, header, rows):
+    """헤더와 행 목록을 CSV로 저장한다 (엑셀용 BOM 포함)."""
     with open(path, "w", encoding="utf-8-sig", newline="") as f:
         f.write(",".join(header) + "\n")
         for r in rows:
@@ -137,12 +150,14 @@ def write_csv(path, header, rows):
 
 
 def md_table(header, rows):
+    """헤더와 행 목록을 마크다운 표 문자열로 만든다."""
     out = ["| " + " | ".join(header) + " |", "|" + "---|" * len(header)]
     out += ["| " + " | ".join(str(v) for v in r) + " |" for r in rows]
     return "\n".join(out)
 
 
 def load_metadata(root):
+    """root 아래 이름에 metadata가 들어간 json(타일별 카메라·촬영일 등)을 찾아 읽는다."""
     for p in root.rglob("*.json"):
         if "metadata" in p.name.lower():
             try:
@@ -154,6 +169,7 @@ def load_metadata(root):
 
 # ------------------------------------------------------------------ main
 def main():
+    """파일 탐색 -> 병렬 읽기 -> 집계 -> csv/json/summary.md 저장 순서로 실행한다."""
     ap = argparse.ArgumentParser()
     ap.add_argument("--root", required=True, help="압축 푼 FLAIR #1 폴더")
     ap.add_argument("--out", default="docs/flair1_spec")
@@ -237,6 +253,7 @@ def main():
 
     # ---- format.json
     def size_of(ps):
+        """파일 목록의 총 용량(바이트)."""
         return sum(p.stat().st_size for p in ps)
     splits = sorted({k[0] for k in keys})
     fmt_out = {

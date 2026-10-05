@@ -22,6 +22,8 @@
     상자 내 최대점      탐색한 범위(각 변수의 최소~최대) 안에서 식이 가장 높은 점
     ratio               점 / theta0 (theta0 = 탐색 시작점)
 정상점·상자 내 최대점의 실제 IoU는 추론이 필요하므로 --theta-out 파일의 값을 run.py apply --theta로 돌려 확인한다.
+
+보고서 3.2·3.4·3.5 (계수 추정 방법 비교)
 """
 import argparse
 import json
@@ -81,6 +83,7 @@ def loo_linear(A, y, w=None, lam=0.0):
 
 
 def fit_huber(A, y):
+    """Huber 회귀 계수 (ε 1.35, 정규화 없음). 설계행렬에 상수열이 있으므로 절편은 따로 맞추지 않는다."""
     m = HuberRegressor(epsilon=1.35, alpha=0.0, fit_intercept=False, max_iter=5000)
     m.fit(A, y)
     return m.coef_
@@ -147,6 +150,7 @@ def box_max(beta, zlo, zhi):
 
 
 def theta0_of(csv_path, X):
+    """탐색 시작점 θ₀: 같은 폴더 result.json의 theta_base, 없으면 기록 첫 행."""
     rj = Path(csv_path).parent / "result.json"
     if rj.exists():
         r = json.load(open(rj, encoding="utf-8"))
@@ -156,6 +160,7 @@ def theta0_of(csv_path, X):
 
 
 def analyze(label, path):
+    """한 탐색 기록에 5가지 방법으로 계수를 맞추고, 방법별 적합도·LOO·정상점·상자 내 최대점을 계산한다."""
     df = pd.read_csv(path)
     X, y = df[PARAMS].to_numpy(float), df["iou"].to_numpy(float)
     n = len(y)
@@ -216,6 +221,7 @@ def analyze(label, path):
 
 
 def main():
+    """trials csv 여러 개를 분석해 요약(--out)과 후보 θ 목록(--theta-out)을 저장한다."""
     ap = argparse.ArgumentParser()
     ap.add_argument("csv", nargs="+")
     ap.add_argument("--labels", nargs="+")

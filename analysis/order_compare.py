@@ -18,6 +18,8 @@
     R2, Adj.R2, AIC, BIC  : 학습 데이터 적합도 (계수가 많을수록 유리)
     LOOCV RMSE            : 점 하나를 빼고 맞춘 식으로 그 점을 예측한 오차 (낮을수록 좋음, 비교 기준)
     holdout RMSE          : 앞 n_broad개로 맞추고 나머지를 예측 (파일에 2단계 점이 있을 때만)
+
+보고서 2.6 (1~4차 비교)
 """
 import argparse
 from itertools import combinations_with_replacement
@@ -33,6 +35,7 @@ ORDER = {"linear": 1, "quad_diag": 2, "cubic_diag": 3, "quartic_diag": 4, "quad"
 
 
 def features(Z, kind):
+    """차수별 설계행렬. quad는 논문 식 1(교차항 포함, 28열), 나머지는 1차 + 각 변수의 거듭제곱(교차항 없음)."""
     n, d = Z.shape
     cols = [np.ones(n)] + [Z[:, i] for i in range(d)]
     if kind == "quad":
@@ -44,6 +47,7 @@ def features(Z, kind):
 
 
 def names(kind):
+    """설계행렬 열 이름 (계수 표 출력용)."""
     out = ["1"] + SHORT
     if kind == "quad":
         out += [f"{a}*{b}" for a, b in combinations_with_replacement(SHORT, 2)]
@@ -54,10 +58,12 @@ def names(kind):
 
 
 def ols(A, y):
+    """최소제곱 계수."""
     return np.linalg.lstsq(A, y, rcond=None)[0]
 
 
 def fit_stats(A, y, n_broad):
+    """한 식의 R², 조정 R², AIC, BIC, LOO RMSE, holdout RMSE를 계산한다."""
     n, p = A.shape
     b = ols(A, y)
     r = y - A @ b
@@ -77,6 +83,7 @@ def fit_stats(A, y, n_broad):
 
 
 def hessian(beta, d=6):
+    """논문 식 1 계수에서 헤시안(대각 = 제곱 계수 × 2, 비대각 = 교차 계수)을 만든다."""
     H = np.zeros((d, d))
     for k, (i, j) in enumerate(combinations_with_replacement(range(d), 2)):
         c = beta[1 + d + k]
@@ -85,6 +92,7 @@ def hessian(beta, d=6):
 
 
 def bootstrap_sig(A, y, labels, n_boot, rng):
+    """부트스트랩(표본 복원 추출)으로 계수별 95% 구간을 구해, 0을 포함하지 않는 계수 수를 센다."""
     n, p = A.shape
     B = []
     for _ in range(n_boot):
@@ -99,6 +107,7 @@ def bootstrap_sig(A, y, labels, n_boot, rng):
 
 
 def analyze(label, df, n_boot, n_broad, seed):
+    """한 탐색 기록에 차수별 식을 모두 맞추고 표로 출력한다. 반환: 요약 행 목록."""
     X, y = df[PARAMS].to_numpy(float), df["iou"].to_numpy(float)
     n = len(y)
     sd = X.std(0)
@@ -149,6 +158,7 @@ def analyze(label, df, n_boot, n_broad, seed):
 
 
 def main():
+    """trials csv 여러 개를 각각(그리고 --pool이면 합쳐서) 분석하고 요약 CSV를 저장한다."""
     ap = argparse.ArgumentParser()
     ap.add_argument("csv", nargs="+", help="trials csv 경로 (여러 개, 와일드카드 가능)")
     ap.add_argument("--pool", action="store_true", help="파일들을 합쳠서 한 번 더 분석 (중복 theta 제거)")

@@ -17,6 +17,8 @@
         --out out_upper_c5
 
 출력: <out>/trace.csv (단계별 theta, soft IoU, 실제 IoU), <out>/result.json
+
+보고서 9.1 (E2: θ 하나로 도달할 수 있는 IoU)
 """
 import argparse
 import json
@@ -33,6 +35,7 @@ PARAMS = ["R_mean", "G_mean", "B_mean", "R_std", "G_std", "B_std"]
 
 
 def load(a):
+    """E2 조건 타일(영상·라벨)을 불러온다. --include/--exclude/--limit로 거른다."""
     pairs = pair_files(a.img_dir, a.msk_dir)
     if a.include:
         pairs = [p for p in pairs if a.include in str(p[1].parent)]
@@ -48,6 +51,7 @@ def load(a):
 
 
 def run(a, model, imgs, msks, theta_start, tag, log):
+    """시작점 하나에서 θ를 경사하강으로 steps번 갱신하며 단계별 soft IoU·실제 IoU를 기록한다. 반환: 최고 실제 IoU와 그 θ."""
     import torch
     t = torch
     target = a.target
@@ -70,9 +74,11 @@ def run(a, model, imgs, msks, theta_start, tag, log):
     lo_m, hi_m, lo_s, hi_s = (t.tensor(v, dtype=t.float32) for v in (lo_m, hi_m, lo_s, hi_s))
 
     def theta_now():
+        """현재 θ = [평균 3개, exp(log 표준편차) 3개]."""
         return np.concatenate([mean.detach().numpy(), np.exp(logstd.detach().numpy())])
 
     def soft_terms(p, i):
+        """배치 i의 soft IoU 분자(교집합)와 분모(합집합). IGNORE 픽셀 제외."""
         g, v = G[i:i + a.batch], valid[i:i + a.batch]
         return (p * g * v).sum(), ((p + g - p * g) * v).sum()
 
@@ -118,6 +124,7 @@ def run(a, model, imgs, msks, theta_start, tag, log):
 
 
 def main():
+    """모델·타일을 불러와 시작점(--restarts)마다 run을 실행하고 trace.csv, result.json을 저장한다."""
     ap = argparse.ArgumentParser()
     ap.add_argument("--img-dir", required=True)
     ap.add_argument("--msk-dir", required=True)

@@ -1,4 +1,14 @@
 """
+실행 진입점. 데이터·모델을 불러와 θ 탐색(calibrate), 적용(apply), 비율 전이(transfer) 등을 실행한다.
+
+전체 흐름 (calibrate, 논문 Figure 1)
+  1. 영상·라벨 타일을 읽고 라벨을 모델 클래스로 매핑 (data.py)
+  2. 대상 클래스마다 보정 타일을 고르고 기준 θ₀ = 타일 전체 채널 통계 (data.channel_stats)
+  3. objective(θ) = θ로 정규화해 U-Net 추론 → 대상 클래스 IoU
+  4. search.rsm_search 로 θ 탐색 (2차식 피팅 → 정상점 → 주변 추론 반복)
+  5. 전체 타일에 기준 θ / 클래스별 최적 θ / 결정 융합 결과를 적용해 IoU 표 저장
+  결과 폴더: result.json(설정·θ·통계), trials_c*.csv(탐색 표본), progress_c*.csv(실시간 기록), iou_table.csv
+
 사용법
   python run.py synthetic [--paper-mode]         # 모델 없이 RSM 탐색 로직만 검증
   python run.py inspect   --img-dir .. --msk-dir .. [--checkpoint ..]
@@ -8,6 +18,7 @@
   python run.py transfer  --img-dir .. --msk-dir .. --checkpoint .. --source out_d004/result.json --targets 5 --out out_d067
 
 탐색 모드
+  --steepest   : 고전 RSM 순서. 1차식 최급상승으로 이동한 뒤 봉우리 근처에서 2차식 (우리 변형)
   --paper-mode : 논문 Figure 1 그대로. 기본 adj0=0.5(n0=30) -> adj_t=0.15(n_t=5), 경계 없음,
                  eps1(회차 best 개선폭) <= eps_stop OR eps2(|회차 best - 예측|) <= eps_stop 이면 종료
   (기본)       : 우리 변형. theta0 ±10% 상자 고정 -> ±3% 7개씩, AND 종료
@@ -30,6 +41,7 @@ from search import NAMES, broad_sweep, rsm_search
 
 
 def _json(o):
+    """numpy 값이 섞인 결과를 JSON으로 저장할 수 있게 바꾼다 (NaN은 null)."""
     if isinstance(o, dict):
         return {str(k): _json(v) for k, v in o.items()}
     if isinstance(o, (list, tuple)):
@@ -46,10 +58,12 @@ def _json(o):
 
 
 def _fmt(theta):
+    """θ 6개를 "R_mean=..., G_mean=..." 형식 문자열로."""
     return ", ".join(f"{n}={v:.2f}" for n, v in zip(NAMES, theta))
 
 
 def _search_kwargs(a):
+    """명령행 옵션을 search.rsm_search 인자로 옮긴다."""
     return dict(paper_mode=a.paper_mode, rel_broad=a.rel_broad, n_broad=a.n_broad,
                 rel_local=a.rel_local, n_local=a.n_local, max_evals=a.max_evals,
                 eps_best=a.eps_best, eps_pred=a.eps_pred, eps_stop=a.eps_stop,
@@ -59,6 +73,7 @@ def _search_kwargs(a):
 
 
 def _mode_str(a):
+    """로그 첫 줄에 찍을 탐색 모드 설명."""
     if a.steepest:
         return (f"최급상승 + 2차 (1차 ±0.10 10개, 걸음 0.5, 최대 3회 -> 2차 ±0.10 30개, fit={a.fit}, "
                 f"상한 {a.max_evals or 80})")
@@ -72,6 +87,8 @@ def _mode_str(a):
 
 # ------------------------------------------------------------------ synthetic
 def cmd_synthetic(a):
+    """모델 없이 탐색 로직만 검증. 정답 최적점을 아는 가짜 IoU 함수(2차 봉우리 + 잡음)로 탐색해
+    찾은 θ가 정답에 가까운지 본다. 기준 θ는 논문 D067 θbase, 정답은 R↓ G↑ B↓ 비율."""
     rng = np.random.default_rng(a.seed)
     theta0 = np.array([97.28, 108.99, 109.48, 62.47, 56.64, 54.35])       # D067 base
     true = theta0 * np.array([0.98, 1.05, 0.95, 1.00, 0.99, 0.99])         # R↓ G↑ B↓
@@ -94,6 +111,7 @@ def cmd_synthetic(a):
 
 # ------------------------------------------------------------------ shared
 def _load(a):
+    """--img-dir/--msk-dir에서 타일을 짝지어 읽는다. --include, --exclude, --tiles, --limit 순서로 거른다."""
     from data import build_lut, load_tiles, pair_files, tile_key
     pairs = pair_files(a.img_dir, a.msk_dir, a.img_glob, a.msk_glob)
     if not pairs:
@@ -116,19 +134,23 @@ def _load(a):
 
 
 def _setup_model(a):
+    """--checkpoint 가중치로 U-Net을 만든다 (--encoder resnet34 / mit_b5)."""
     from data import load_model
     return load_model(a.checkpoint, a.encoder, a.n_classes, a.arch)
 
 
 def _names(a):
+    """--class-names "a,b,c" 를 목록으로. 없으면 None (클래스 번호로 표시)."""
     return a.class_names.split(",") if a.class_names else None
 
 
 def _cname(names, c):
+    """클래스 c의 표시 이름."""
     return names[c] if names and c < len(names) else str(c)
 
 
 def _tiles_with(msks, c):
+    """정답 라벨에 클래스 c가 한 픽셀이라도 있는 타일 인덱스 (논문 Table 3의 Target Tiles 정의)."""
     return np.where([(m == c).any() for m in msks])[0]
 
 
@@ -152,6 +174,7 @@ def _base_theta(a, imgs):
 
 
 def _base_pred(a, ev, theta0):
+    """기준선 예측. per-tile이면 타일별 통계로, 아니면 θ₀ 하나로 정규화해 추론."""
     return ev.predict_per_tile() if a.base_mode == "per-tile" else ev.predict(theta0)
 
 
@@ -201,6 +224,7 @@ def _fuse(base_pred, class_preds):
 
 
 def _write_trials(path, X, Y, it=None):
+    """탐색 표본(θ 6개, IoU, 회차)을 csv로 저장한다 (소수 4자리)."""
     with open(path, "w", newline="") as f:
         w = csv.writer(f)
         w.writerow(NAMES + ["iou"] + (["iter"] if it is not None else []))
@@ -210,6 +234,7 @@ def _write_trials(path, X, Y, it=None):
 
 # ------------------------------------------------------------------ inspect
 def cmd_inspect(a):
+    """데이터 확인용: 영상 크기·값 범위, 마스크 원본 값 분포, (가중치를 주면) 모델 출력 크기를 출력."""
     a.label_map, a.limit = None, a.limit or 20
     from data import _read_tif, pair_files
     pairs = pair_files(a.img_dir, a.msk_dir, a.img_glob, a.msk_glob)[: a.limit]
@@ -271,28 +296,33 @@ def _reuse_wrap(objective, path, tol=1e-3):
 
 
 def cmd_calibrate(a):
+    """대상 클래스마다 θ를 탐색하고, 전체 타일에 기준·최적·융합 결과를 적용해 저장한다 (논문 E1~E5의 탐색)."""
     from data import Evaluator, class_iou
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
     names = _names(a)
     imgs, msks = _load(a)
     model = _setup_model(a)
+    # 논문은 보정·평가 타일을 나누지 않으므로 논문 모드·최급상승에서는 test 분리 없음
     test_frac = 0.0 if (a.paper_mode or a.steepest) else a.test_frac
     print(f"[mode] {_mode_str(a)} / 기준선={a.base_mode} / 보정 타일={a.calib_tiles} / "
           f"{'calib/test 분리 없음' if test_frac == 0 else f'test {test_frac:.0%} 분리'}")
 
     per_class, test_union = {}, set()
     for c in a.targets:
+        # 1) 보정 타일 선택 (target: 대상 클래스가 있는 타일 / all: 전체)
         calib, test = _split(msks, c, test_frac, a.seed, a.calib_tiles)
         print(f"\n##### 클래스 {c} ({_cname(names, c)}): calib={len(calib)} test={len(test)}")
         if len(calib) < 5:
             print("  -> 대상 타일이 5개 미만이라 건너뜀")
             continue
+        # 2) 기준 θ₀ = 보정 타일 전체 채널 통계, 기준 IoU 계산
         ev_cal = Evaluator(model, imgs[calib], a.n_classes, a.batch, a.device, a.threads)
         theta0 = _base_theta(a, imgs[calib])
         print("[theta_base]", _fmt(theta0))
         base_iou = class_iou(_base_pred(a, ev_cal, theta0), msks[calib], a.n_classes)[c]
 
+        # 3) 목적함수: θ로 보정 타일을 추론해 대상 클래스 IoU(%)를 돌려줌. 호출 1회 = 추론 1회
         def objective(theta, ev=ev_cal, idx=calib, cc=c):
             return class_iou(ev.predict(theta), msks[idx], a.n_classes)[cc]
 
@@ -308,6 +338,7 @@ def cmd_calibrate(a):
                 csv.writer(f).writerow(NAMES + ["iou"])
         objective = _log_wrap(objective, prog)
 
+        # 4) θ 탐색 (search.py). 최고 IoU θ와 기준 대비 개선폭
         res = rsm_search(objective, theta0, **_search_kwargs(a))
         delta = res["iou_best"] - base_iou
         print(f"\n[class {c}] base={base_iou:.2f} best={res['iou_best']:.2f} delta={delta:+.2f} "
@@ -328,7 +359,7 @@ def cmd_calibrate(a):
     if not per_class:
         raise SystemExit("최적화한 클래스가 없음")
 
-    # 전체 타일 보고: 기준선 / 클래스별 최적값 / 개선폭 우선 융합
+    # 5) 전체 타일 보고: 기준선 / 클래스별 최적값 / 개선폭 우선 융합
     ev_all = Evaluator(model, imgs, a.n_classes, a.batch, a.device, a.threads)
     theta_all = _base_theta(a, imgs)
     base_pred = _base_pred(a, ev_all, theta_all)
@@ -382,7 +413,11 @@ def _fit_stats(X, y, kind):
 
 
 def cmd_broad(a):
-    """1단계(Iteration_0)만 adj0별로 돌려 IoU 분포와 피팅 적합도를 비교."""
+    """1단계(Iteration_0)만 adj0별로 돌려 IoU 분포와 피팅 적합도를 비교.
+
+    폭마다 추론 n_broad회. 1차·2차(교차항 없음)·2차(교차항 포함) 식의 R², 조정 R², LOO를
+    broad_summary.csv로 저장한다(실험 #2).
+    """
     from data import Evaluator, class_iou
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
@@ -430,7 +465,11 @@ def cmd_broad(a):
 
 # ------------------------------------------------------------------ apply
 def cmd_apply(a):
-    """이미 찾은 최적값(절대값)을 그대로 다른 모델/데이터에 적용. 논문의 ResNet34 -> MiT-B5 전이."""
+    """이미 찾은 최적값(절대값)을 그대로 다른 모델/데이터에 적용. 논문의 ResNet34 -> MiT-B5 전이.
+
+    --theta-from(result.json) 또는 --theta(6개 값)로 θ를 받는다. 탐색은 하지 않고 추론만 한다.
+    논문 Table 8·9의 θ를 넣어 논문 IoU가 나오는지 확인할 때 이 명령을 썼다(E4·E5 실험 #22~#33).
+    """
     from data import Evaluator
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
@@ -467,7 +506,10 @@ def cmd_apply(a):
 
 # ------------------------------------------------------------------ transfer
 def cmd_transfer(a):
-    """다른 도메인(B)의 result.json 비율을 이 도메인(A)에 적용 (재탐색 없음, 논문 식 4)."""
+    """다른 도메인(B)의 result.json 비율을 이 도메인(A)에 적용 (재탐색 없음, 논문 식 4).
+
+    A의 기준 θ(대상 클래스가 있는 타일 통계) × B의 최적/기준 비율 = A의 예측 최적 θ.
+    """
     from data import Evaluator
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
@@ -503,6 +545,7 @@ def cmd_transfer(a):
 
 # ------------------------------------------------------------------ cli
 def _add_search_args(p):
+    """탐색 관련 옵션 (synthetic, calibrate 공통)."""
     p.add_argument("--steepest", action="store_true",
                    help="고전 RSM 순서: 1차식 최급상승 후 2차식 (우리 변형, search.rsm_search_steepest)")
     p.add_argument("--paper-mode", action="store_true", help="논문 Figure 1 방식 그대로")
@@ -529,6 +572,7 @@ def _add_search_args(p):
 
 
 def main():
+    """명령행 파싱. 하위 명령: synthetic, inspect, calibrate, broad, apply, transfer."""
     p = argparse.ArgumentParser()
     sub = p.add_subparsers(dest="cmd", required=True)
 
@@ -537,6 +581,7 @@ def main():
     s.add_argument("--seed", type=int, default=0)
     _add_search_args(s)
 
+    # 데이터·모델 공통 옵션 (synthetic 제외 모든 명령)
     common = argparse.ArgumentParser(add_help=False)
     common.add_argument("--img-dir", required=True)
     common.add_argument("--msk-dir", required=True)

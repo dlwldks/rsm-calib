@@ -16,6 +16,8 @@
   progress.npz         후보별 혼동행렬 누적 (중간 저장, --resume으로 이어서)
   candidates_iou.csv   후보별 클래스 IoU, 침엽수 IoU, mIoU, 걸린 시간
   domain_iou.csv       후보 × 도메인별 대상 클래스 IoU, 대상 픽셀 수, mIoU
+
+보고서 4.2 (toy에서 찾은 θ를 전체 테스트셋에 적용)
 """
 import argparse
 import csv
@@ -37,12 +39,14 @@ NAMES = ["building", "pervious surface", "impervious surface", "bare soil", "wat
 
 
 def iou_from_cm(cm):
+    """혼동행렬 -> 클래스별 IoU(%) = TP / (TP + FP + FN) × 100."""
     tp = np.diag(cm).astype(float)
     den = cm.sum(0) + cm.sum(1) - tp
     return np.where(den > 0, tp / np.maximum(den, 1), np.nan) * 100
 
 
 def pooled_theta(df):
+    """spec_tiles.csv의 채널 합계로 타일 전체 픽셀 기준 평균·표준편차(θ₀)를 계산한다."""
     n = df["n_px"].astype(float).sum()
     s = np.array([df[f"sum_{c}"].astype(float).sum() for c in "RGB"])
     ss = np.array([df[f"sq_{c}"].astype(float).sum() for c in "RGB"])
@@ -51,6 +55,7 @@ def pooled_theta(df):
 
 
 def main():
+    """test 표본 타일을 한 장씩 읽어 후보 θ마다 추론하고, 후보별·도메인별 혼동행렬을 누적해 IoU를 저장한다."""
     ap = argparse.ArgumentParser()
     ap.add_argument("--spec", default="out_full_test/spec_tiles.csv")
     ap.add_argument("--candidates", default="analysis/results/full_candidates.csv")

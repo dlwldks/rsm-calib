@@ -7,6 +7,8 @@
 조건은 E2와 같음: test 50타일(--include test), 19채널 라벨맵, 대상 클래스 5(침엽수), 타일 픽셀 합산 IoU.
 먼저 기준(theta0)과 확인용 theta를 돌려 기존 결과와 같은지 본 뒤 후보를 돌린다.
 물리적 범위(평균 0~255, 표준편차 1~255)를 벗어난 후보는 추론하지 않는다.
+
+보고서 3.3 (방법별 후보 θ의 실제 IoU)
 """
 import argparse
 import sys
@@ -23,10 +25,12 @@ PARAMS = ["R_mean", "G_mean", "B_mean", "R_std", "G_std", "B_std"]
 
 
 def physical(th):
+    """θ가 물리적 범위(평균 0~255, 표준편차 1~255) 안인지."""
     return np.all(th[:3] >= 0) and np.all(th[:3] <= 255) and np.all(th[3:] >= 1) and np.all(th[3:] <= 255)
 
 
 def main():
+    """E2 조건 타일을 불러와 기준 θ₀·확인용 θ·후보 θ를 차례로 추론하고 IoU를 csv로 저장한다."""
     ap = argparse.ArgumentParser()
     ap.add_argument("--img-dir", required=True)
     ap.add_argument("--msk-dir", required=True)
@@ -49,6 +53,7 @@ def main():
                    threads=a.threads)
 
     def iou(th):
+        """θ로 추론한 대상 클래스 IoU와 걸린 시간(초)."""
         t = time.time()
         v = float(class_iou(ev.predict(np.asarray(th, float)), msks, a.n_classes)[a.target])
         return v, time.time() - t

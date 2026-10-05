@@ -14,6 +14,8 @@
   spec_summary.md    split·도메인별 타일 수, 클래스별 픽셀 비율·등장 타일 수 (명세서용)
   base_iou.csv       기준 IoU (pooled / per-tile 두 방식), 클래스별
   tile_iou.csv       타일별·클래스별 IoU (per-tile 기준)
+
+보고서 4.1 (전체 테스트셋 기준 IoU)
 """
 import argparse
 import csv
@@ -36,11 +38,13 @@ FLAIR_NAMES = {1: "building", 2: "pervious surface", 3: "impervious surface", 4:
 
 
 def split_of(path):
+    """경로에 "test"가 있으면 test, 아니면 train."""
     s = str(path).lower()
     return "test" if "test" in s else "train"
 
 
 def domain_of(path):
+    """경로에서 도메인 이름(D004_2021 형식)을 찾는다. 없으면 unknown."""
     m = re.search(r"D\d{3}_\d{4}", str(path))
     return m.group(0) if m else "unknown"
 
@@ -76,6 +80,7 @@ def build_spec(pairs, bands, out):
 
 
 def pooled_theta(rows):
+    """타일별 채널 합계를 합쳐 전체 픽셀 기준 평균·표준편차(θ₀)를 계산한다."""
     n = sum(float(r["n_px"]) for r in rows)
     s = np.array([sum(float(r[f"sum_{c}"]) for r in rows) for c in "RGB"])
     ss = np.array([sum(float(r[f"sq_{c}"]) for r in rows) for c in "RGB"])
@@ -84,6 +89,7 @@ def pooled_theta(rows):
 
 
 def write_summary(rows, out):
+    """split·도메인별 타일 수, 채널 평균, 클래스별 픽셀 비율을 spec_summary.md로 쓴다."""
     L = ["# FLAIR 데이터 명세 (자동 집계)", ""]
     for split in sorted({r["split"] for r in rows}):
         rs = [r for r in rows if r["split"] == split]
@@ -110,12 +116,14 @@ def write_summary(rows, out):
 
 # ------------------------------------------------------------ 2) U-Net 기준 IoU
 def iou_from_cm(cm):
+    """혼동행렬 -> 클래스별 IoU(%) = TP / (TP + FP + FN) × 100."""
     tp = np.diag(cm).astype(float)
     den = cm.sum(0) + cm.sum(1) - tp
     return np.where(den > 0, tp / np.maximum(den, 1), np.nan) * 100
 
 
 def run_iou(rows, a, out):
+    """타일을 한 장씩 읽어 pooled θ₀와 타일별 통계 두 방식으로 추론하고, 혼동행렬을 누적해 기준 IoU를 저장한다 (--resume 지원)."""
     import torch
     if a.threads:
         torch.set_num_threads(a.threads)
@@ -177,6 +185,7 @@ def run_iou(rows, a, out):
 
 
 def main():
+    """명령행 파싱 -> 타일 명세 집계(spec_tiles.csv, spec_summary.md) -> --checkpoint가 있으면 기준 IoU 계산."""
     p = argparse.ArgumentParser()
     p.add_argument("--img-dir", required=True)
     p.add_argument("--msk-dir", required=True)

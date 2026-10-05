@@ -3,6 +3,8 @@
 사용: python analysis/order_by_n.py out_e2_test50_n125/trials_c5.csv --out analysis/results/order_by_n.csv
 - 앞에서부터 n개: 탐색이 n회에서 멈췄다면 얻었을 기록
 - 무작위 n개: 125개 중 n개를 200번 뽑은 평균
+
+보고서 6.1 (관측 수에 따른 1차·2차 경계)
 """
 import argparse
 import sys
@@ -18,6 +20,7 @@ KINDS = {"linear": "1차(7)", "quad_diag": "2차 교차항 없음(13)", "quad": 
 
 
 def loo(Z, y, kind):
+    """표준화 좌표 Z와 IoU y에 kind 식을 맞췄을 때의 LOO RMSE. 관측이 계수 수 + 1 이하이면 NaN."""
     A = features(Z, kind)
     n, p = A.shape
     if n <= p + 1:
@@ -29,6 +32,7 @@ def loo(Z, y, kind):
 
 
 def scores(X, y):
+    """1차·2차(교차항 없음)·논문 식 1의 LOO RMSE와, 식 없이 평균값만으로 예측했을 때의 LOO RMSE."""
     sd = X.std(0)
     sd[sd == 0] = 1
     Z = (X - X.mean(0)) / sd
@@ -39,6 +43,7 @@ def scores(X, y):
 
 
 def main():
+    """n마다 앞에서부터 n개, 무작위 n개(reps번 평균) 두 방식으로 LOO를 비교해 표로 저장한다 (보고서 6.1)."""
     ap = argparse.ArgumentParser()
     ap.add_argument("csv")
     ap.add_argument("--ns", type=int, nargs="+", default=[35, 40, 45, 50, 60, 70, 80, 90, 100, 110, 125])
