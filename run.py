@@ -20,6 +20,7 @@
 import argparse
 import csv
 import json
+import re
 from pathlib import Path
 
 import numpy as np
@@ -101,6 +102,10 @@ def _load(a):
         pairs = [p for p in pairs if a.include in str(p[1].parent)]
     if a.exclude:
         pairs = [p for p in pairs if not any(x in p[1].stem for x in a.exclude)]
+    if a.tiles:  # 타일 번호 목록 파일(한 줄에 하나, 예: docs/paper_tiles/e4_d004_tiles50.txt)
+        keep = {ln.strip() for ln in open(a.tiles) if ln.strip()}
+        pairs = [p for p in pairs if re.findall(r"\d+", p[1].stem)[-1] in keep]
+        print(f"[data] --tiles {a.tiles}: 목록 {len(keep)}개 중 {len(pairs)}개 찾음")
     if not pairs:
         raise SystemExit("--include/--exclude 적용 후 남은 타일이 없음")
     if a.limit:
@@ -519,6 +524,7 @@ def main():
     common.add_argument("--limit", type=int)
     common.add_argument("--include", help="마스크 경로(폴더)에 이 문자열이 있는 타일만 사용. 예: test")
     common.add_argument("--exclude", nargs="+", help="파일명에 이 문자열이 있는 타일 제외 (오라벨 타일 등)")
+    common.add_argument("--tiles", help="이 목록 파일에 있는 타일 번호만 사용 (docs/paper_tiles/*.txt)")
     common.add_argument("--batch", type=int, default=8)
     common.add_argument("--device", default="cpu")
     common.add_argument("--threads", type=int)
