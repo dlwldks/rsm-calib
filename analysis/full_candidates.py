@@ -15,6 +15,7 @@
   sample_tiles.csv     사용한 타일 목록
   progress.npz         후보별 혼동행렬 누적 (중간 저장, --resume으로 이어서)
   candidates_iou.csv   후보별 클래스 IoU, 침엽수 IoU, mIoU, 걸린 시간
+  domain_iou.csv       후보 × 도메인별 대상 클래스 IoU, 대상 픽셀 수, mIoU
 """
 import argparse
 import csv
@@ -101,13 +102,18 @@ def main():
     means = [torch.tensor(t[:3], dtype=torch.float32).view(1, 3, 1, 1) for t in thetas]
     stds = [torch.tensor(t[3:], dtype=torch.float32).view(1, 3, 1, 1) for t in thetas]
 
+    domains = sorted(tiles["domain"].unique())
+    dix = {d: i for i, d in enumerate(domains)}
     ck = out / "progress.npz"
     cms, done, sec = np.zeros((K, n, n), np.int64), 0, np.zeros(K)
+    dcms = np.zeros((K, len(domains), n, n), np.int64)  # 도메인별 혼동행렬
     if a.resume and ck.exists():
         z = np.load(ck)
-        if z["cms"].shape == cms.shape:
-            cms, done, sec = z["cms"], int(z["done"]), z["sec"]
+        if z["cms"].shape == cms.shape and "dcms" in z.files and z["dcms"].shape == dcms.shape:
+            cms, dcms, done, sec = z["cms"], z["dcms"], int(z["done"]), z["sec"]
             print(f"[iou] 이어서 시작: {done}/{len(tiles)}")
+        else:
+            print("[iou] 이전 progress.npz와 후보 수 또는 형식이 달라 처음부터 시작")
 
     t0 = time.time()
     rows = tiles.to_dict("records")
@@ -119,12 +125,14 @@ def main():
             for k in range(K):
                 tk = time.time()
                 pred = model((x - means[k]) / stds[k]).argmax(1).numpy()
-                for p, gt in zip(pred, gts):
-                    cms[k] += confusion(p, gt, n)
+                for p, gt, r in zip(pred, gts, chunk):
+                    cm = confusion(p, gt, n)
+                    cms[k] += cm
+                    dcms[k, dix[r["domain"]]] += cm
                 sec[k] += time.time() - tk
         done = s + len(chunk)
         if done % (a.batch * 25) < a.batch or done == len(rows):
-            np.savez(ck, cms=cms, done=done, sec=sec)
+            np.savez(ck, cms=cms, dcms=dcms, done=done, sec=sec)
             el = time.time() - t0
             print(f"[iou] {done}/{len(rows)}  {el / 60:.1f}분, 남은 예상 "
                   f"{el / max(done - 0, 1) * (len(rows) - done) / 60:.0f}분  "
@@ -142,7 +150,17 @@ def main():
     df = pd.DataFrame(res).round(4)
     df.to_csv(out / "candidates_iou.csv", index=False, quoting=csv.QUOTE_MINIMAL)
     print(df[["name", "toy_iou", "target_iou", "miou"]].to_string(index=False))
-    print(f"저장: {out / 'candidates_iou.csv'}")
+    drows = []
+    for k in range(K):
+        for d, j in dix.items():
+            iou = iou_from_cm(dcms[k, j])
+            drows.append(dict(name=cand.loc[k, "name"], domain=d, target_iou=iou[a.target],
+                              target_pixels=int(dcms[k, j][a.target].sum()), miou=np.nanmean(iou)))
+    dd = pd.DataFrame(drows).round(4)
+    dd.to_csv(out / "domain_iou.csv", index=False)
+    print("\n[도메인별 대상 클래스 IoU]")
+    print(dd.pivot(index="domain", columns="name", values="target_iou")[list(cand["name"])].round(1).to_string())
+    print(f"저장: {out / 'candidates_iou.csv'}, {out / 'domain_iou.csv'}")
 
 
 if __name__ == "__main__":
