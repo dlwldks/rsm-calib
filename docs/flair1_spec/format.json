@@ -1,0 +1,53 @@
+{
+ "root": "data\\flair1_hf\\extracted",
+ "n_img": {
+  "test": 15700,
+  "train": 61712
+ },
+ "n_msk": {
+  "test": 15700,
+  "train": 61712
+ },
+ "img_only": [],
+ "msk_only": [],
+ "bytes_img": {
+  "test": 20600723600,
+  "train": 80975266876
+ },
+ "bytes_msk": {
+  "test": 168839593,
+  "train": 637554797
+ },
+ "img_stats_tiles": 77412,
+ "img_sample_per_domain": 0,
+ "format_counts": {
+  "img_shape": {
+   "512x512": 77412
+  },
+  "img_count": {
+   "5": 77412
+  },
+  "img_dtype": {
+   "uint8": 77412
+  },
+  "img_crs": {
+   "EPSG:2154": 77412
+  },
+  "img_res": {
+   "0.200": 77412
+  },
+  "msk_shape": {
+   "512x512": 77412
+  },
+  "msk_count": {
+   "1": 77412
+  },
+  "msk_dtype": {
+   "uint8": 77412
+  }
+ },
+ "read_errors": [],
+ "n_read_errors": 0,
+ "metadata_file": "data\\flair1_hf\\extracted\\flair-1_metadata_aerial.json",
+ "elapsed_min": 18.0
+}
