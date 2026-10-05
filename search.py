@@ -148,6 +148,145 @@ def rsm_search_paper(objective, theta0, adj0=0.5, n0=30, adj_t=0.15, n_t=5,
                               fit=fit, ridge_lambda=ridge_lambda, move=move))
 
 
+# ------------------------------------------------------------------ 최급상승 + 2차 (고전 RSM 순서)
+def rsm_search_steepest(objective, theta0, a1=0.10, n1=10, step=0.5, max_path=10,
+                        max_cycles=3, a2=0.10, n2=30, adj_f=0.05, n_f=5, fit="ols",
+                        ridge_lambda=None, max_evals=80, seed=0, verbose=True):
+    """고전 RSM 순서 (Box–Wilson): 최적점에서 멀면 1차식으로 최급상승, 가까우면 2차식.
+
+    1차 단계 (최대 max_cycles회 반복)
+      - 중심 c ±a1 상자에서 n1개(첫 점 = c) 추론
+      - 코드 좌표 x = (theta - c) / (c*a1)로 1차식 y = b0 + b'x 를 최소제곱으로 맞춤
+      - 기울기 방향 d = b/|b| 로 c + c*a1*(k*step*d), k = 1..max_path 를 차례로 추론
+        IoU가 직전 걸음보다 떨어지면 멈춤
+      - 경로 최고점이 이번 상자 최고값보다 높으면 그 점을 새 중심으로 반복, 아니면 2차 단계로
+    2차 단계
+      - 새 중심 ±a2 상자에서 n2개 추론, 상자 안 표본 전부로 2차식(논문 식 1 형태) 피팅
+      - 정상점이 극대이고 상자 안이면 정상점, 아니면 상자 안 최대점으로 이동
+      - 이동점 ±adj_f에서 n_f개(첫 점 = 이동점) 추론 후 종료
+    출력 theta_best = 전체 표본에서 IoU 최대인 theta
+
+    a1, n1, step, max_path, max_cycles, a2, n2, adj_f, n_f 는 모두 우리가 정한 값 (논문 Figure 1에 없음).
+    """
+    rng = np.random.default_rng(seed)
+    theta0 = np.asarray(theta0, float)
+    d = len(theta0)
+    X, Y, IT, TAG = [], [], [], []
+
+    def ev(th, it, tag):
+        th = physical_clip(th)
+        y = float(objective(th))
+        X.append(th)
+        Y.append(y)
+        IT.append(it)
+        TAG.append(tag)
+        if verbose:
+            print(f"[{len(Y):3d}] {tag:<12} IoU={y:6.2f}  best={max(Y):6.2f}", flush=True)
+        return y
+
+    def full():
+        return len(Y) >= max_evals
+
+    history, stop_reason = [], "max_evals"
+    center = theta0.copy()
+    for cyc in range(1, max_cycles + 1):
+        # 1차 설계
+        ys_box = []
+        for k, th in enumerate(neighborhood(center, a1, n1, rng)):
+            if full():
+                break
+            ys_box.append(ev(th, cyc, f"c{cyc}-box"))
+        if full():
+            break
+        Xb = np.array(X[-len(ys_box):])
+        scale = center * a1
+        Zb = (Xb - center) / scale
+        A = np.column_stack([np.ones(len(Zb)), Zb])
+        beta = np.linalg.lstsq(A, np.array(ys_box), rcond=None)[0]
+        fitted = A @ beta
+        tss = float(((np.array(ys_box) - np.mean(ys_box)) ** 2).sum())
+        r2_lin = 1 - float(((np.array(ys_box) - fitted) ** 2).sum()) / tss if tss > 0 else np.nan
+        g = beta[1:]
+        gnorm = float(np.linalg.norm(g))
+        dirn = g / gnorm if gnorm > 0 else np.zeros(d)
+        if verbose:
+            print(f"      -> cycle{cyc} 1차식 R2={r2_lin:.3f} |grad|={gnorm:.2f} "
+                  f"방향(코드 좌표)={np.round(dirn, 2).tolist()}")
+        # 최급상승 경로
+        path_y, path_th, prev = [], [], ys_box[0]
+        for k in range(1, max_path + 1):
+            if full():
+                break
+            th = center + scale * (k * step * dirn)
+            y = ev(th, cyc, f"c{cyc}-path{k}")
+            path_y.append(y)
+            path_th.append(physical_clip(th))
+            if y < prev:
+                break
+            prev = y
+        box_best = max(ys_box)
+        path_best = max(path_y) if path_y else -np.inf
+        moved = path_best > box_best
+        history.append(dict(phase="linear", cycle=cyc, center=center.copy(), r2_linear=r2_lin,
+                            grad_norm=gnorm, direction=dirn, box_best=box_best,
+                            path_iou=path_y, path_best=path_best, moved=moved))
+        if verbose:
+            print(f"      -> 상자 최고 {box_best:.2f}, 경로 최고 {path_best:.2f} "
+                  f"({'새 중심으로 이동' if moved else '오르지 않음 -> 2차 단계'})")
+        if not moved or full():
+            if moved:
+                center = path_th[int(np.argmax(path_y))]
+            else:
+                center = Xb[int(np.argmax(ys_box))]
+            break
+        center = path_th[int(np.argmax(path_y))]
+
+    # 2차 단계
+    model, kind, x_hat, y_pred = None, None, None, None
+    if not full():
+        lo, hi = physical_clip(center * (1 - a2)), physical_clip(center * (1 + a2))
+        for th in neighborhood(center, a2, n2, rng):
+            if full():
+                break
+            ev(th, max_cycles + 1, "quad-box")
+        Xa, Ya = np.array(X), np.array(Y)
+        inbox = np.all((Xa >= lo - 1e-9) & (Xa <= hi + 1e-9), axis=1)
+        if inbox.sum() >= n_min(d) + 1 and not full():
+            model = QuadraticRSM().fit(Xa[inbox], Ya[inbox], fit, ridge_lambda)
+            x_s, kind = model.stationary_point()
+            if kind == "max" and np.all(x_s >= lo) and np.all(x_s <= hi):
+                x_hat, how = x_s, "stationary"
+            else:
+                x_hat, how = model.maximize(lo, hi)
+            x_hat = physical_clip(x_hat)
+            y_pred = float(model.predict(x_hat)[0])
+            if verbose:
+                print(f"      -> 2차식 (표본 {int(inbox.sum())}개, R2={model.r2:.3f}) "
+                      f"정상점 {kind}, 이동 {how}, 예측 {y_pred:.2f}")
+            ys_f = []
+            for k, th in enumerate(neighborhood(x_hat, adj_f, n_f, rng)):
+                if full():
+                    break
+                ys_f.append(ev(th, max_cycles + 2, "quad-final" if k == 0 else "quad-nbr"))
+            history.append(dict(phase="quadratic", center=center.copy(), n_fit=int(inbox.sum()),
+                                r2=model.r2, stationary_kind=kind, move=how, theta_hat=x_hat,
+                                iou_pred=y_pred, iou_final=ys_f[0] if ys_f else None,
+                                iou_best_final=max(ys_f) if ys_f else None,
+                                ridge_lambda=getattr(model, "lam", None)))
+            stop_reason = "done" if not full() else "max_evals"
+
+    final = QuadraticRSM().fit(np.array(X), np.array(Y), fit, ridge_lambda)
+    i = int(np.argmax(Y))
+    return dict(theta_base=theta0, theta_best=X[i], iou_base=Y[0], iou_best=Y[i],
+                theta_rsm=x_hat if x_hat is not None else X[i],
+                X=np.array(X), Y=np.array(Y), iteration=np.array(IT), tags=TAG,
+                rsm=final.summary(), history=history, bounds=physical_bounds(d),
+                paper_mode=False, steepest=True, stop_reason=stop_reason,
+                settings=dict(a1=a1, n1=n1, step=step, max_path=max_path, max_cycles=max_cycles,
+                              a2=a2, n2=n2, adj_f=adj_f, n_f=n_f, fit=fit,
+                              ridge_lambda=ridge_lambda, max_evals=max_evals, seed=seed))
+
+
 # ------------------------------------------------------------------ 우리 방식
 def rsm_search_ours(objective, theta0, rel_broad=0.10, n_broad=30, rel_local=0.03,
                     n_local=6, max_evals=60, eps_best=0.1, eps_pred=1.0, seed=0,
@@ -214,10 +353,13 @@ def rsm_search_ours(objective, theta0, rel_broad=0.10, n_broad=30, rel_local=0.0
 def rsm_search(objective, theta0, paper_mode=False, rel_broad=None, n_broad=30,
                rel_local=None, n_local=None, max_evals=None, eps_best=0.1, eps_pred=1.0,
                eps_stop=0.0, r2_min=None, seed=0, verbose=True, fit="ols", ridge_lambda=None,
-               move="stationary"):
+               move="stationary", steepest=False):
     """모드별 기본값: 논문 adj0=0.5, adj_t=0.15, n_t=5, 상한 80 / 우리 ±0.10, ±0.03, 6, 상한 60."""
     if max_evals is None:
-        max_evals = 80 if paper_mode else 60
+        max_evals = 80 if (paper_mode or steepest) else 60
+    if steepest:
+        return rsm_search_steepest(objective, theta0, fit=fit, ridge_lambda=ridge_lambda,
+                                   max_evals=max_evals, seed=seed, verbose=verbose)
     if paper_mode:
         return rsm_search_paper(
             objective, theta0,

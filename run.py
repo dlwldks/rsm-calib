@@ -53,10 +53,14 @@ def _search_kwargs(a):
                 rel_local=a.rel_local, n_local=a.n_local, max_evals=a.max_evals,
                 eps_best=a.eps_best, eps_pred=a.eps_pred, eps_stop=a.eps_stop,
                 r2_min=a.r2_min, seed=a.seed,
-                fit=a.fit, ridge_lambda=a.ridge_lambda, move=a.move)
+                fit=a.fit, ridge_lambda=a.ridge_lambda, move=a.move,
+                steepest=a.steepest)
 
 
 def _mode_str(a):
+    if a.steepest:
+        return (f"최급상승 + 2차 (1차 ±0.10 10개, 걸음 0.5, 최대 3회 -> 2차 ±0.10 30개, fit={a.fit}, "
+                f"상한 {a.max_evals or 80})")
     if a.paper_mode:
         return (f"논문 Figure 1 (adj0={0.5 if a.rel_broad is None else a.rel_broad}, "
                 f"adj_t={0.15 if a.rel_local is None else a.rel_local}, "
@@ -467,6 +471,8 @@ def cmd_transfer(a):
 
 # ------------------------------------------------------------------ cli
 def _add_search_args(p):
+    p.add_argument("--steepest", action="store_true",
+                   help="고전 RSM 순서: 1차식 최급상승 후 2차식 (우리 변형, search.rsm_search_steepest)")
     p.add_argument("--paper-mode", action="store_true", help="논문 Figure 1 방식 그대로")
     p.add_argument("--rel-broad", "--adj0", type=float, default=None,
                    help="1단계 폭 (상대 비율). 기본: 논문 0.5 / 우리 0.10")
