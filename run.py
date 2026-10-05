@@ -228,6 +228,22 @@ def cmd_inspect(a):
 
 
 # ------------------------------------------------------------------ calibrate
+def _reuse_wrap(objective, path, tol=1e-3):
+    """이전 실행 trials csv(소수 4자리 저장)에 같은 theta(차이 tol 이하)가 있으면 그 IoU를 돌려줌.
+    재시작 등으로 끊긴 탐색을 다시 돌릴 때 앞부분 추론을 건너뛰는 용도. 조건(데이터·클래스·seed)이 같아야 함."""
+    import pandas as pd
+    d = pd.read_csv(path)
+    X, Y = d[NAMES].to_numpy(float), d["iou"].to_numpy(float)
+
+    def wrapped(theta):
+        diff = np.abs(X - np.asarray(theta, float)).max(1)
+        i = int(np.argmin(diff))
+        if diff[i] <= tol:
+            return float(Y[i])
+        return objective(theta)
+    return wrapped
+
+
 def cmd_calibrate(a):
     from data import Evaluator, class_iou
     out = Path(a.out)
@@ -253,6 +269,9 @@ def cmd_calibrate(a):
 
         def objective(theta, ev=ev_cal, idx=calib, cc=c):
             return class_iou(ev.predict(theta), msks[idx], a.n_classes)[cc]
+
+        if a.reuse:  # 같은 조건의 이전 trials csv에서 같은 theta는 추론 없이 기록값 사용
+            objective = _reuse_wrap(objective, a.reuse)
 
         res = rsm_search(objective, theta0, **_search_kwargs(a))
         delta = res["iou_best"] - base_iou
@@ -465,6 +484,7 @@ def _add_search_args(p):
     p.add_argument("--ridge-lambda", type=float, default=None, help="ridge λ 고정값 (기본: LOO 선택)")
     p.add_argument("--move", choices=["stationary", "boxmax"], default="stationary",
                    help="논문 모드 이동: stationary(논문) / boxmax(정상점이 극대가 아니면 1단계 범위 안 최대점, 우리 변형)")
+    p.add_argument("--reuse", default=None, help="이전 trials csv: 같은 theta는 추론 없이 기록값 사용 (끊긴 탐색 재개용)")
     p.add_argument("--eps-best", type=float, default=0.1, help="우리 모드 종료 임계값 1")
     p.add_argument("--eps-pred", type=float, default=1.0, help="우리 모드 종료 임계값 2")
 
