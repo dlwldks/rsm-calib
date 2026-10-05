@@ -255,7 +255,7 @@ def cmd_calibrate(a):
     names = _names(a)
     imgs, msks = _load(a)
     model = _setup_model(a)
-    test_frac = 0.0 if a.paper_mode else a.test_frac
+    test_frac = 0.0 if (a.paper_mode or a.steepest) else a.test_frac
     print(f"[mode] {_mode_str(a)} / 기준선={a.base_mode} / 보정 타일={a.calib_tiles} / "
           f"{'calib/test 분리 없음' if test_frac == 0 else f'test {test_frac:.0%} 분리'}")
 
