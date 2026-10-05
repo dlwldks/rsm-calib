@@ -1,0 +1,20 @@
+model_idx,mask_value,class,iou_pooled,iou_per_tile
+0,1,building,77.54,73.90
+1,2,pervious surface,48.84,32.03
+2,3,impervious surface,71.17,67.00
+3,4,bare soil,55.10,30.18
+4,5,water,79.93,56.63
+5,6,coniferous,34.03,25.29
+6,7,deciduous,63.39,56.47
+7,8,brushwood,26.72,16.20
+8,9,vineyard,82.58,79.11
+9,10,herbaceous vegetation,50.75,45.61
+10,11,agricultural land,49.55,39.76
+11,12,plowed land,50.47,22.44
+12,13,swimming pool,32.99,27.87
+13,14,snow,0.00,0.00
+14,15,clear cut,nan,nan
+15,16,mixed,nan,nan
+16,17,ligneous,nan,nan
+17,18,greenhouse,22.06,22.71
+18,19,other,nan,nan
