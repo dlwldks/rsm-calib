@@ -5,7 +5,7 @@
 
 - IoU는 argmax 때문에 미분이 안 되므로, 학습 방향은 대상 클래스의 soft IoU(softmax 확률로 계산)로 잡는다.
 - 매 단계 실제 IoU(argmax, 타일 픽셀 합산)를 따로 계산해 기록하고, 최종 결과도 실제 IoU 최대값이다.
-- 추론 예산: 1단계 = forward + backward 1회(+ 실제 IoU용 forward 1회). --steps 로 정한다.
+- 1단계 = 기울기 없는 추론 1회(실제 IoU·soft IoU) + 배치별 역전파 1회. 메모리는 배치 크기만큼만 쓴다. --steps 로 정한다.
 - 시작점을 여러 개(--restarts) 둘 수 있다. 0번은 theta0, 나머지는 theta0 ±rel 범위 무작위.
 
 조건은 E2와 같음: test 50타일(--include test), 19채널 라벨맵, 대상 클래스 5(침엽수).
@@ -63,46 +63,48 @@ def run(a, model, imgs, msks, theta_start, tag, log):
     def theta_now():
         return np.concatenate([mean.detach().numpy(), np.exp(logstd.detach().numpy())])
 
-    def true_iou(theta):
-        m = t.tensor(theta[:3], dtype=t.float32).view(1, 3, 1, 1)
-        s = t.tensor(theta[3:], dtype=t.float32).view(1, 3, 1, 1)
-        pred = np.empty(msks.shape, np.uint8)
-        with t.inference_mode():
-            for i in range(0, len(X), a.batch):
-                pred[i:i + a.batch] = model((X[i:i + a.batch] - m) / s).argmax(1).numpy()
-        return float(class_iou(pred, msks, a.n_classes)[target])
+    def soft_terms(p, i):
+        g, v = G[i:i + a.batch], valid[i:i + a.batch]
+        return (p * g * v).sum(), ((p + g - p * g) * v).sum()
 
     best = (-1.0, None, -1)
     for step in range(a.steps + 1):
         th = theta_now()
-        iou = true_iou(th)
+        m = t.tensor(th[:3], dtype=t.float32).view(1, 3, 1, 1)
+        s = t.tensor(th[3:], dtype=t.float32).view(1, 3, 1, 1)
+
+        # 1차 통과 (기울기 없음): 실제 IoU(argmax)와 soft IoU 합계(I, U)를 같이 계산
+        pred = np.empty(msks.shape, np.uint8)
+        I = U = 0.0
+        with t.inference_mode():
+            for i in range(0, len(X), a.batch):
+                out = model((X[i:i + a.batch] - m) / s)
+                pred[i:i + a.batch] = out.argmax(1).numpy()
+                ii, uu = soft_terms(t.softmax(out, 1)[:, target], i)
+                I, U = I + ii.item(), U + uu.item()
+        iou = float(class_iou(pred, msks, a.n_classes)[target])
+        soft = I / max(U, 1.0)
         if iou > best[0]:
             best = (iou, th.copy(), step)
+        log.append(dict(run=tag, step=step, soft_iou=soft * 100, iou=iou, **dict(zip(PARAMS, th))))
+        print(f"[{tag}] step {step:3d} soft={soft * 100:6.2f} iou={iou:6.2f} (best {best[0]:.2f} @ {best[2]})",
+              flush=True)
         if step == a.steps:
-            log.append(dict(run=tag, step=step, soft_iou=np.nan, iou=iou, **dict(zip(PARAMS, th))))
-            print(f"[{tag}] step {step:3d} iou={iou:6.2f} (best {best[0]:.2f} @ {best[2]})")
             break
 
-        # soft IoU: 타일 픽셀 합산 (실제 IoU 집계와 같은 방식)
+        # 2차 통과 (기울기): 배치마다 역전파해서 메모리를 배치 크기만큼만 사용.
+        # soft = I/U 의 기울기 = (dI·U − I·dU)/U² 를 배치별로 나눠 더함 (전체 한 번에 한 것과 같은 값)
         opt.zero_grad()
-        inter = union = 0.0
-        std = t.exp(logstd).view(1, 3, 1, 1)
         for i in range(0, len(X), a.batch):
+            std = t.exp(logstd).view(1, 3, 1, 1)
             x = (X[i:i + a.batch] - mean.view(1, 3, 1, 1)) / std
-            p = t.softmax(model(x), 1)[:, target]
-            g, v = G[i:i + a.batch], valid[i:i + a.batch]
-            inter = inter + (p * g * v).sum()
-            union = union + ((p + g - p * g) * v).sum()
-        soft = inter / union.clamp_min(1.0)
-        (-soft).backward()
+            ii, uu = soft_terms(t.softmax(model(x), 1)[:, target], i)
+            loss = -(ii * U - I * uu) / max(U, 1.0) ** 2
+            loss.backward()
         opt.step()
         with t.no_grad():  # 물리 범위: 평균 0~255, 표준편차 1~255
             mean.clamp_(0, 255)
             logstd.clamp_(0.0, float(np.log(255)))
-
-        log.append(dict(run=tag, step=step, soft_iou=soft.item() * 100, iou=iou, **dict(zip(PARAMS, th))))
-        print(f"[{tag}] step {step:3d} soft={soft.item() * 100:6.2f} iou={iou:6.2f} (best {best[0]:.2f} @ {best[2]})",
-              flush=True)
     return best
 
 
@@ -122,7 +124,7 @@ def main():
     ap.add_argument("--lr", type=float, default=2.0, help="Adam 학습률 (theta 원 단위, 표준편차는 log 단위)")
     ap.add_argument("--restarts", type=int, default=1, help="시작점 개수 (0번 = theta0)")
     ap.add_argument("--rel", type=float, default=0.25, help="추가 시작점 범위 (theta0 ±rel)")
-    ap.add_argument("--batch", type=int, default=8)
+    ap.add_argument("--batch", type=int, default=4, help="역전파 배치. 메모리가 부족하면 2로")
     ap.add_argument("--threads", type=int)
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--out", default="out_upper_c5")
