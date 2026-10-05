@@ -53,9 +53,11 @@ def neighborhood(center, adj, n, rng, include_center=True):
 # ------------------------------------------------------------------ 논문 방식
 def rsm_search_paper(objective, theta0, adj0=0.5, n0=30, adj_t=0.15, n_t=5,
                      eps_stop=0.0, max_evals=80, r2_min=None, seed=0, verbose=True,
-                     fit="ols", ridge_lambda=None):
+                     fit="ols", ridge_lambda=None, move="stationary"):
     """논문 Figure 1.
 
+    move: "stationary"(논문, 기본) / "boxmax"(우리 변형: 정상점이 극대가 아니면
+          1단계 범위 theta0*(1±adj0) 안에서 식이 가장 높은 점으로 이동).
     fit: 계수 추정 방법. "ols"(최소제곱, 기본) / "ridge"(회차마다 LOO로 λ 선택, ridge_lambda 주면 고정).
 
     (b1) Iteration_0 : C_0 = Neighborhood(theta0; ±adj0, n0)  -> 추론, 로그 S에 추가
@@ -78,6 +80,8 @@ def rsm_search_paper(objective, theta0, adj0=0.5, n0=30, adj_t=0.15, n_t=5,
     theta0 = np.asarray(theta0, float)
     d = len(theta0)
     n0 = max(n0, n_min(d) + 2)
+    box_lo = physical_clip(theta0 * (1 - adj0))
+    box_hi = physical_clip(theta0 * (1 + adj0))
     X, Y, IT = [], [], []
 
     def run_batch(cands, t):
@@ -104,6 +108,8 @@ def rsm_search_paper(objective, theta0, adj0=0.5, n0=30, adj_t=0.15, n_t=5,
         t += 1
         model = QuadraticRSM().fit(np.array(X), np.array(Y), fit, ridge_lambda)
         theta_raw, kind = model.stationary_point()
+        if move == "boxmax" and kind != "max":
+            theta_raw, kind = model.maximize(box_lo, box_hi)
         theta_hat = physical_clip(theta_raw)
         clipped = bool(not np.allclose(theta_raw, theta_hat))
         y_pred = float(model.predict(theta_hat)[0])
@@ -139,7 +145,7 @@ def rsm_search_paper(objective, theta0, adj0=0.5, n0=30, adj_t=0.15, n_t=5,
                 paper_mode=True, stop_reason=stop_reason,
                 settings=dict(adj0=adj0, n0=n0, adj_t=adj_t, n_t=n_t, eps_stop=eps_stop,
                               max_evals=max_evals, r2_min=r2_min, seed=seed,
-                              fit=fit, ridge_lambda=ridge_lambda))
+                              fit=fit, ridge_lambda=ridge_lambda, move=move))
 
 
 # ------------------------------------------------------------------ 우리 방식
@@ -207,7 +213,8 @@ def rsm_search_ours(objective, theta0, rel_broad=0.10, n_broad=30, rel_local=0.0
 
 def rsm_search(objective, theta0, paper_mode=False, rel_broad=None, n_broad=30,
                rel_local=None, n_local=None, max_evals=None, eps_best=0.1, eps_pred=1.0,
-               eps_stop=0.0, r2_min=None, seed=0, verbose=True, fit="ols", ridge_lambda=None):
+               eps_stop=0.0, r2_min=None, seed=0, verbose=True, fit="ols", ridge_lambda=None,
+               move="stationary"):
     """모드별 기본값: 논문 adj0=0.5, adj_t=0.15, n_t=5, 상한 80 / 우리 ±0.10, ±0.03, 6, 상한 60."""
     if max_evals is None:
         max_evals = 80 if paper_mode else 60
@@ -218,9 +225,9 @@ def rsm_search(objective, theta0, paper_mode=False, rel_broad=None, n_broad=30,
             adj_t=0.15 if rel_local is None else rel_local,
             n_t=5 if n_local is None else n_local,
             eps_stop=eps_stop, max_evals=max_evals, r2_min=r2_min, seed=seed, verbose=verbose,
-            fit=fit, ridge_lambda=ridge_lambda)
-    if fit != "ols":
-        raise ValueError("--fit ridge는 --paper-mode에서만 지원")
+            fit=fit, ridge_lambda=ridge_lambda, move=move)
+    if fit != "ols" or move != "stationary":
+        raise ValueError("--fit ridge, --move boxmax는 --paper-mode에서만 지원")
     return rsm_search_ours(
         objective, theta0,
         rel_broad=0.10 if rel_broad is None else rel_broad, n_broad=n_broad,
