@@ -58,7 +58,16 @@ def run(a, model, imgs, msks, theta_start, tag, log):
     # 평균은 그대로, 표준편차는 log로 두어 항상 양수
     mean = t.tensor(theta_start[:3], dtype=t.float32, requires_grad=True)
     logstd = t.tensor(np.log(theta_start[3:]), dtype=t.float32, requires_grad=True)
-    opt = t.optim.Adam([mean, logstd], lr=a.lr)
+    # 평균(원 단위)과 표준편차(log 단위)는 단위가 달라 학습률을 따로 둔다
+    opt = t.optim.Adam([{"params": [mean], "lr": a.lr}, {"params": [logstd], "lr": a.lr_std}])
+    th0 = np.asarray(theta_start, float)
+    if a.box > 0:  # theta0 ±box 안으로 제한 (논문 Figure 5 탐색 범위 약 ±5~14%)
+        lo_m, hi_m = th0[:3] * (1 - a.box), th0[:3] * (1 + a.box)
+        lo_s, hi_s = np.log(th0[3:] * (1 - a.box)), np.log(th0[3:] * (1 + a.box))
+    else:          # 물리 범위만: 평균 0~255, 표준편차 1~255
+        lo_m, hi_m = np.zeros(3), np.full(3, 255.0)
+        lo_s, hi_s = np.zeros(3), np.full(3, np.log(255.0))
+    lo_m, hi_m, lo_s, hi_s = (t.tensor(v, dtype=t.float32) for v in (lo_m, hi_m, lo_s, hi_s))
 
     def theta_now():
         return np.concatenate([mean.detach().numpy(), np.exp(logstd.detach().numpy())])
@@ -102,9 +111,9 @@ def run(a, model, imgs, msks, theta_start, tag, log):
             loss = -(ii * U - I * uu) / max(U, 1.0) ** 2
             loss.backward()
         opt.step()
-        with t.no_grad():  # 물리 범위: 평균 0~255, 표준편차 1~255
-            mean.clamp_(0, 255)
-            logstd.clamp_(0.0, float(np.log(255)))
+        with t.no_grad():
+            mean.copy_(t.max(t.min(mean, hi_m), lo_m))
+            logstd.copy_(t.max(t.min(logstd, hi_s), lo_s))
     return best
 
 
@@ -121,7 +130,9 @@ def main():
     ap.add_argument("--limit", type=int)
     ap.add_argument("--target", type=int, default=5, help="모델 클래스 인덱스 (5 = 침엽수)")
     ap.add_argument("--steps", type=int, default=40, help="시작점 1개당 경사 단계 수")
-    ap.add_argument("--lr", type=float, default=2.0, help="Adam 학습률 (theta 원 단위, 표준편차는 log 단위)")
+    ap.add_argument("--lr", type=float, default=1.0, help="평균의 Adam 학습률 (원 단위, 한 단계 최대 약 1)")
+    ap.add_argument("--lr-std", type=float, default=0.01, help="표준편차의 Adam 학습률 (log 단위, 한 단계 최대 약 1%%)")
+    ap.add_argument("--box", type=float, default=0.10, help="theta0 ±box 안으로 제한. 0이면 물리 범위(0~255)만")
     ap.add_argument("--restarts", type=int, default=1, help="시작점 개수 (0번 = theta0)")
     ap.add_argument("--rel", type=float, default=0.25, help="추가 시작점 범위 (theta0 ±rel)")
     ap.add_argument("--batch", type=int, default=4, help="역전파 배치. 메모리가 부족하면 2로")
