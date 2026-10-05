@@ -22,11 +22,21 @@ def _read_tif(path):
         return a.transpose(2, 0, 1) if a.shape[-1] < a.shape[0] else a
 
 
+def tile_key(p):
+    """타일 번호. FLAIR: IMG_000123 -> 000123 (마지막 숫자).
+    AI-HUB: LC_GG_AP12_0033_2017 -> 0033 (마지막 숫자는 촬영 연도라서 그 앞 숫자)."""
+    stem = Path(p).stem
+    m = re.match(r"LC_[A-Z]+_(?:AP|SN)\d+_(\d+)_\d{4}$", stem)
+    if m:
+        return m.group(1)
+    nums = re.findall(r"\d+", stem)
+    return nums[-1] if nums else stem
+
+
 def pair_files(img_dir, msk_dir, img_glob="IMG_*.tif", msk_glob="MSK_*.tif"):
-    """IMG_000123.tif <-> MSK_000123.tif 처럼 파일명 마지막 숫자로 매칭."""
-    def key(p):
-        nums = re.findall(r"\d+", p.stem)
-        return nums[-1] if nums else p.stem
+    """IMG_000123.tif <-> MSK_000123.tif 처럼 타일 번호(tile_key)로 매칭.
+    AI-HUB는 영상·라벨 파일명이 같으므로 폴더를 나눠 두고 --img-glob/--msk-glob 을 LC_*.tif 로 준다."""
+    key = tile_key
     imgs = {key(p): p for p in sorted(Path(img_dir).rglob(img_glob))}
     msks = {key(p): p for p in sorted(Path(msk_dir).rglob(msk_glob))}
     common = sorted(set(imgs) & set(msks))

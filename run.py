@@ -94,7 +94,7 @@ def cmd_synthetic(a):
 
 # ------------------------------------------------------------------ shared
 def _load(a):
-    from data import build_lut, load_tiles, pair_files
+    from data import build_lut, load_tiles, pair_files, tile_key
     pairs = pair_files(a.img_dir, a.msk_dir, a.img_glob, a.msk_glob)
     if not pairs:
         raise SystemExit("IMG/MSK 쌍을 못 찾음. --img-glob/--msk-glob 확인")
@@ -104,7 +104,7 @@ def _load(a):
         pairs = [p for p in pairs if not any(x in p[1].stem for x in a.exclude)]
     if a.tiles:  # 타일 번호 목록 파일(한 줄에 하나, 예: docs/paper_tiles/e4_d004_tiles50.txt)
         keep = {ln.strip() for ln in open(a.tiles) if ln.strip()}
-        pairs = [p for p in pairs if re.findall(r"\d+", p[1].stem)[-1] in keep]
+        pairs = [p for p in pairs if tile_key(p[1]) in keep]
         print(f"[data] --tiles {a.tiles}: 목록 {len(keep)}개 중 {len(pairs)}개 찾음")
     if not pairs:
         raise SystemExit("--include/--exclude 적용 후 남은 타일이 없음")
