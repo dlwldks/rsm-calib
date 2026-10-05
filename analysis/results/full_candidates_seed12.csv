@@ -1,0 +1,3 @@
+name,source,toy_iou,R_mean,G_mean,B_mean,R_std,G_std,B_std
+adj25_ridge_boxmax_r2_seed1_best,±25% Ridge+범위 안 최대점+R²≥0.9 반복 최고 표본 (seed 1),45.61,160.9095,118.8781,78.0954,69.9787,53.9217,53.1199
+adj25_ridge_boxmax_r2_seed2_best,±25% Ridge+범위 안 최대점+R²≥0.9 반복 최고 표본 (seed 2),32.27,140.5077,118.1674,81.6991,55.5766,49.9087,46.952
