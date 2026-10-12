@@ -1,0 +1,412 @@
+{
+  "theta0": [
+    122.6448221206665,
+    125.71837103366852,
+    113.62644445896149,
+    67.5632207233704,
+    62.37712341012804,
+    64.3807582050685
+  ],
+  "n_samples": 75,
+  "summary": [
+    {
+      "cls": 5,
+      "name": "coniferous",
+      "n": 75,
+      "base": 8.005471146501145,
+      "best_obs": 73.95269376598183,
+      "best_obs_idx": 68,
+      "r2": 0.9405480411792841,
+      "adj_r2": 0.906394788239724,
+      "p_value": 1.292444058709568e-20,
+      "loo": 10.528419133119288,
+      "loo_mean_only": 26.068932383869928,
+      "stationary": "saddle",
+      "stationary_theta": [
+        139.38,
+        120.95,
+        116.49,
+        70.61,
+        73.89,
+        63.69
+      ],
+      "boxmax_theta": [
+        110.66,
+        137.87,
+        102.3,
+        74.32,
+        56.23,
+        58.06
+      ],
+      "boxmax_how": "bounded-saddle",
+      "boxmax_pred": 197.61784537028853,
+      "best_obs_theta": [
+        115.39,
+        124.79,
+        119.74,
+        69.66,
+        57.11,
+        58.38
+      ],
+      "boxmax_actual": 64.81814720616683,
+      "boxmax_actual_all": {
+        "coniferous": 64.81814720616683,
+        "deciduous": 36.205066648131016,
+        "building": 84.55094287101625,
+        "water": 89.73415438319758,
+        "greenhouse": 87.30396066886141
+      }
+    },
+    {
+      "cls": 6,
+      "name": "deciduous",
+      "n": 75,
+      "base": 25.458898332323628,
+      "best_obs": 46.52605867661992,
+      "best_obs_idx": 2,
+      "r2": 0.8680362094375078,
+      "adj_r2": 0.7922272233696931,
+      "p_value": 6.826375214849101e-13,
+      "loo": 3.876248454592337,
+      "loo_mean_only": 6.642741688244512,
+      "stationary": "saddle",
+      "stationary_theta": [
+        117.85,
+        109.61,
+        116.55,
+        65.0,
+        66.38,
+        64.14
+      ],
+      "boxmax_theta": [
+        110.66,
+        137.87,
+        114.56,
+        74.32,
+        56.23,
+        58.06
+      ],
+      "boxmax_how": "bounded-saddle",
+      "boxmax_pred": 70.15785050459762,
+      "best_obs_theta": [
+        113.17,
+        117.82,
+        115.5,
+        70.39,
+        57.37,
+        63.24
+      ],
+      "boxmax_actual": 34.5376552260832,
+      "boxmax_actual_all": {
+        "coniferous": 69.30659986832475,
+        "deciduous": 34.5376552260832,
+        "building": 82.74381617201226,
+        "water": 92.39738947348786,
+        "greenhouse": 85.14103842450666
+      }
+    },
+    {
+      "cls": 0,
+      "name": "building",
+      "n": 75,
+      "base": 80.61251831858026,
+      "best_obs": 83.87390949697101,
+      "best_obs_idx": 47,
+      "r2": 0.9650397428550767,
+      "adj_r2": 0.9449561908782058,
+      "p_value": 6.69832264379647e-26,
+      "loo": 0.8216746451306228,
+      "loo_mean_only": 2.5987397607238436,
+      "stationary": "saddle",
+      "stationary_theta": [
+        19.67,
+        -66.57,
+        247.81,
+        -187.56,
+        127.41,
+        60.75
+      ],
+      "boxmax_theta": [
+        134.81,
+        134.96,
+        102.3,
+        74.32,
+        56.23,
+        58.06
+      ],
+      "boxmax_how": "bounded-saddle",
+      "boxmax_pred": 88.53663565742121,
+      "best_obs_theta": [
+        118.46,
+        128.62,
+        105.53,
+        72.38,
+        59.96,
+        61.64
+      ],
+      "boxmax_actual": 85.54917272900245,
+      "boxmax_actual_all": {
+        "coniferous": 67.84496323418162,
+        "deciduous": 42.282428668222536,
+        "building": 85.54917272900245,
+        "water": 95.87712338995706,
+        "greenhouse": 93.62937810150024
+      }
+    },
+    {
+      "cls": 4,
+      "name": "water",
+      "n": 75,
+      "base": 98.84139647734186,
+      "best_obs": 99.48609565665684,
+      "best_obs_idx": 61,
+      "r2": 0.847437016376054,
+      "adj_r2": 0.7597944513154892,
+      "p_value": 1.5516907135327982e-11,
+      "loo": 7.0422641876748875,
+      "loo_mean_only": 10.285599608841261,
+      "stationary": "saddle",
+      "stationary_theta": [
+        132.18,
+        137.39,
+        119.38,
+        69.37,
+        54.42,
+        62.82
+      ],
+      "boxmax_theta": [
+        110.66,
+        115.83,
+        102.3,
+        74.32,
+        56.23,
+        60.82
+      ],
+      "boxmax_how": "bounded-saddle",
+      "boxmax_pred": 107.19783944852756,
+      "best_obs_theta": [
+        132.89,
+        123.0,
+        105.1,
+        71.55,
+        62.05,
+        69.98
+      ],
+      "boxmax_actual": 98.30251823707148,
+      "boxmax_actual_all": {
+        "coniferous": 74.14378478322523,
+        "deciduous": 45.19851740978974,
+        "building": 82.07384291156683,
+        "water": 98.30251823707148,
+        "greenhouse": 89.68352375250213
+      }
+    },
+    {
+      "cls": 17,
+      "name": "greenhouse",
+      "n": 75,
+      "base": 82.13247399208379,
+      "best_obs": 90.8148768423966,
+      "best_obs_idx": 47,
+      "r2": 0.977262576472971,
+      "adj_r2": 0.9642006523191458,
+      "p_value": 3.168125166025887e-30,
+      "loo": 2.158897222903883,
+      "loo_mean_only": 8.52016103103147,
+      "stationary": "saddle",
+      "stationary_theta": [
+        127.34,
+        121.68,
+        91.89,
+        76.31,
+        60.21,
+        61.71
+      ],
+      "boxmax_theta": [
+        134.81,
+        137.87,
+        112.92,
+        74.32,
+        56.23,
+        60.73
+      ],
+      "boxmax_how": "bounded-saddle",
+      "boxmax_pred": 96.51413428787883,
+      "best_obs_theta": [
+        118.46,
+        128.62,
+        105.53,
+        72.38,
+        59.96,
+        61.64
+      ],
+      "boxmax_actual": 91.5810827765975,
+      "boxmax_actual_all": {
+        "coniferous": 67.11965320542888,
+        "deciduous": 42.003204257501444,
+        "building": 84.66614636547489,
+        "water": 97.47803897236852,
+        "greenhouse": 91.5810827765975
+      }
+    }
+  ],
+  "overlap": [
+    {
+      "pair": "coniferous-deciduous",
+      "px_c1": 1154750,
+      "px_c2": 1154771,
+      "overlap_px": 167411,
+      "overlap_pct_of_c1": 14.497596882442087,
+      "overlap_pct_of_c2": 14.497333237499037,
+      "overlap_gt": {
+        "coniferous": 102226,
+        "deciduous": 59452
+      }
+    },
+    {
+      "pair": "coniferous-building",
+      "px_c1": 1154750,
+      "px_c2": 1100129,
+      "overlap_px": 187,
+      "overlap_pct_of_c1": 0.016193981381251353,
+      "overlap_pct_of_c2": 0.016998006597408123,
+      "overlap_gt": {
+        "coniferous": 74,
+        "building": 34
+      }
+    },
+    {
+      "pair": "coniferous-water",
+      "px_c1": 1154750,
+      "px_c2": 481470,
+      "overlap_px": 393,
+      "overlap_pct_of_c1": 0.03403334054990258,
+      "overlap_pct_of_c2": 0.08162502336594181,
+      "overlap_gt": {
+        "coniferous": 1,
+        "water": 0
+      }
+    },
+    {
+      "pair": "coniferous-greenhouse",
+      "px_c1": 1154750,
+      "px_c2": 717363,
+      "overlap_px": 0,
+      "overlap_pct_of_c1": 0.0,
+      "overlap_pct_of_c2": 0.0,
+      "overlap_gt": {
+        "coniferous": 0,
+        "greenhouse": 0
+      }
+    },
+    {
+      "pair": "deciduous-building",
+      "px_c1": 1154771,
+      "px_c2": 1100129,
+      "overlap_px": 1141,
+      "overlap_pct_of_c1": 0.09880746918653135,
+      "overlap_pct_of_c2": 0.1037151097734902,
+      "overlap_gt": {
+        "deciduous": 58,
+        "building": 620
+      }
+    },
+    {
+      "pair": "deciduous-water",
+      "px_c1": 1154771,
+      "px_c2": 481470,
+      "overlap_px": 417,
+      "overlap_pct_of_c1": 0.036111055785086395,
+      "overlap_pct_of_c2": 0.08660975761729703,
+      "overlap_gt": {
+        "deciduous": 0,
+        "water": 37
+      }
+    },
+    {
+      "pair": "deciduous-greenhouse",
+      "px_c1": 1154771,
+      "px_c2": 717363,
+      "overlap_px": 544,
+      "overlap_pct_of_c1": 0.047108907307163064,
+      "overlap_pct_of_c2": 0.07583329499848751,
+      "overlap_gt": {
+        "deciduous": 0,
+        "greenhouse": 224
+      }
+    },
+    {
+      "pair": "building-water",
+      "px_c1": 1100129,
+      "px_c2": 481470,
+      "overlap_px": 34,
+      "overlap_pct_of_c1": 0.003090546654074204,
+      "overlap_pct_of_c2": 0.007061706856086568,
+      "overlap_gt": {
+        "building": 34,
+        "water": 0
+      }
+    },
+    {
+      "pair": "building-greenhouse",
+      "px_c1": 1100129,
+      "px_c2": 717363,
+      "overlap_px": 0,
+      "overlap_pct_of_c1": 0.0,
+      "overlap_pct_of_c2": 0.0,
+      "overlap_gt": {
+        "building": 0,
+        "greenhouse": 0
+      }
+    },
+    {
+      "pair": "water-greenhouse",
+      "px_c1": 481470,
+      "px_c2": 717363,
+      "overlap_px": 0,
+      "overlap_pct_of_c1": 0.0,
+      "overlap_pct_of_c2": 0.0,
+      "overlap_gt": {
+        "water": 0,
+        "greenhouse": 0
+      }
+    }
+  ],
+  "fusion": {
+    "order_low_to_high": [
+      "water",
+      "building",
+      "greenhouse",
+      "deciduous",
+      "coniferous"
+    ],
+    "delta": {
+      "coniferous": 65.94722261948068,
+      "deciduous": 21.06716034429629,
+      "building": 3.2613911783907525,
+      "water": 0.6446991793149834,
+      "greenhouse": 8.682402850312798
+    },
+    "base": {
+      "coniferous": 8.005471146501145,
+      "deciduous": 25.458898332323628,
+      "building": 80.61251831858026,
+      "water": 98.84139647734186,
+      "greenhouse": 82.13247399208379
+    },
+    "own_theta": {
+      "coniferous": 73.95269376598183,
+      "deciduous": 46.52605867661992,
+      "building": 83.87390949697101,
+      "water": 99.48609565665684,
+      "greenhouse": 90.81487684239659
+    },
+    "fused": {
+      "coniferous": 73.9454672228047,
+      "deciduous": 44.331414530532214,
+      "building": 84.57314101001808,
+      "water": 99.44638823685725,
+      "greenhouse": 90.73159390045423
+    }
+  }
+}

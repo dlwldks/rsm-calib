@@ -1,0 +1,21 @@
+note,run,experiment,target_class,tiles,theta0,method,adj0,adj_t,n_t,max_evals,eps_stop,seed,stop_reason,n_rounds,n_saddle,n_max,final_r2,n_evals,base,stage1_n,stage1_best,best,best_index,best_iter,later_best,quad_gain,best_at_30,best_at_50,best_at_75
+,analysis/results/e1/search_adj0.1_n125,E1,5,,pooled,RSM(논문 Figure 1),0.1,0.15,5.0,125.0,-1000.0,0,max_evals,19.0,19.0,0.0,0.86,125,8.01,30,69.51,71.26,44,3,71.26,1.75,69.51,71.26,71.26
+,analysis/results/e1/search_authorbase_n125,E1,5,,given,RSM(논문 Figure 1),0.1,0.15,5.0,125.0,-1000.0,0,max_evals,19.0,19.0,0.0,0.81,125,11.82,30,61.92,61.92,6,0,39.43,-22.49,61.92,61.92,61.92
+,analysis/results/e5/search_A_seed0_n125,E5,5,docs\paper_tiles\e5_d067_tiles150.txt,given,RSM(논문 Figure 1),0.1,0.15,5.0,125.0,-1000.0,0,max_evals,19.0,19.0,0.0,0.88,125,75.93,30,81.85,81.85,28,0,81.02,-0.83,81.85,81.85,81.85
+,out_e2_fig1,E2,5,,per-tile,RSM(논문 Figure 1),0.5,0.15,5.0,60.0,0.0,0,e1,1.0,1.0,0.0,0.98,35,33.41,30,47.31,47.31,7,0,4.6,-42.72,47.31,,
+"이전 코드(θ0 ±10% 상자 고정, ±3%)로 실행, 현재 논문 모드와 비교 불가",out_e2_paper,E2,5,,pooled,RSM(논문 Figure 1),,,,,,,,1.0,0.0,0.0,1.0,37,21.58,37,40.89,40.89,10,0,,,40.89,,
+"이전 코드(θ0 ±10% 상자 고정, ±3%)로 실행, 현재 논문 모드와 비교 불가",out_e2_paper_full,E2,5,,per-tile,RSM(논문 Figure 1),,,,,,,,1.0,0.0,0.0,1.0,43,33.41,43,44.28,44.28,27,0,,,44.28,,
+"이전 코드(θ0 ±10% 상자 고정, ±3%)로 실행, 현재 논문 모드와 비교 불가",out_e2_paper_official,E2,5,,given,RSM(논문 Figure 1),,,,,,,,1.0,0.0,0.0,0.99,37,24.59,37,37.19,37.19,27,0,,,37.19,,
+,out_e2_test50,E2,5,test,per-tile,RSM(논문 Figure 1),0.5,0.15,5.0,80.0,0.0,0,e1,1.0,1.0,0.0,0.94,35,13.34,30,29.5,29.5,20,0,17.91,-11.59,29.5,,
+,out_e2_test50_adj0.25,E2,5,test,pooled,RSM(논문 Figure 1),0.25,0.15,5.0,80.0,0.0,0,e1,1.0,1.0,0.0,0.95,35,13.34,30,29.1,29.1,29,0,0.0,-29.1,29.1,,
+,out_e2_test50_adj0.25_ridge,E2,5,test,pooled,RSM(논문 Figure 1) + ridge,0.25,0.15,5.0,80.0,0.0,0,e1,1.0,1.0,0.0,0.75,35,13.34,30,29.1,29.1,29,0,1.87,-27.23,29.1,,
+,out_e2_test50_adj0.25_ridge_boxmax,E2,5,test,pooled,"RSM(논문 Figure 1) + ridge, boxmax",0.25,0.15,5.0,80.0,0.0,0,e1,1.0,1.0,0.0,0.31,35,13.34,30,29.1,29.1,29,0,25.32,-3.78,29.1,,
+,out_e2_test50_adj0.25_ridge_boxmax_r2,E2,5,test,pooled,"RSM(논문 Figure 1) + ridge, boxmax, R2>=0.9",0.25,0.15,5.0,80.0,0.0,0,max_evals,10.0,10.0,0.0,0.69,80,13.34,30,29.1,36.96,72,9,36.96,7.86,29.1,29.1,36.96
+,out_e2_test50_adj0.25_ridge_boxmax_r2_seed1,E2,5,test,pooled,"RSM(논문 Figure 1) + ridge, boxmax, R2>=0.9",0.25,0.15,5.0,80.0,0.0,1,max_evals,10.0,10.0,0.0,0.53,80,13.34,30,31.73,45.61,57,6,45.61,13.88,31.73,44.22,45.61
+,out_e2_test50_adj0.25_ridge_boxmax_r2_seed2,E2,5,test,pooled,"RSM(논문 Figure 1) + ridge, boxmax, R2>=0.9",0.25,0.15,5.0,80.0,0.0,2,max_evals,10.0,10.0,0.0,0.8,80,13.34,30,32.06,32.27,40,2,32.27,0.21,32.06,32.27,32.27
+,out_e2_test50_adj10,E2,5,test,pooled,RSM(논문 Figure 1),0.1,0.15,5.0,80.0,0.0,0,e1,1.0,1.0,0.0,0.99,35,13.34,30,29.34,29.34,10,0,28.34,-1.0,29.34,,
+,out_e2_test50_n125,E2,5,test,pooled,RSM(논문 Figure 1),0.5,0.15,5.0,125.0,-1000.0,0,max_evals,19.0,19.0,0.0,0.55,125,13.34,30,29.5,29.5,20,0,26.29,-3.21,29.5,29.5,29.5
+,out_e4_A_seed0,E4,5,docs\paper_tiles\e4_d004_tiles50.txt,given,RSM(논문 Figure 1),0.1,0.15,5.0,65.0,-1000.0,0,max_evals,7.0,7.0,0.0,0.91,65,30.78,30,43.32,43.32,4,0,34.27,-9.05,43.32,43.32,
+,out_e4_B_seed0,E4,5,docs\paper_tiles\e4_d004_tiles50.txt,given,RSM(논문 Figure 1) + boxmax,0.1,0.15,5.0,65.0,-1000.0,0,max_evals,7.0,7.0,0.0,0.89,65,30.78,30,43.32,43.68,50,4,43.68,0.36,43.32,43.68,
+,out_e4_adj0.1_n125,E4,5,docs\paper_tiles\e4_d004_tiles50.txt,pooled,RSM(논문 Figure 1),0.1,0.15,5.0,125.0,0.0,0,e1,1.0,1.0,0.0,0.99,35,27.59,30,41.62,41.62,2,0,31.48,-10.14,41.62,,
+quad_gain 자리 = 추가 무작위 45개가 처음 30개를 넘은 폭,analysis/results/per_class/e1_box,E1,5,e1 32장,pooled,"무작위 LHS (처음 30개 = RSM seed0 1단계와 같음, 이후 seed1)",0.1,,,75.0,,0+1,,,,,,75,8.01,30,69.51,73.95,69,1,73.95,4.44,69.51,69.51,73.95
