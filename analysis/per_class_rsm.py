@@ -87,6 +87,7 @@ def main():
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--batch", type=int, default=8)
     ap.add_argument("--threads", type=int)
+    ap.add_argument("--device", default="auto", help="auto = GPU 있으면 cuda, 없으면 cpu")
     ap.add_argument("--out", required=True)
     a = ap.parse_args()
 
@@ -120,8 +121,12 @@ def main():
             uniq.append(np.asarray(t, float))
     print(f"[theta] {len(uniq)}개 (중복 제거 전 {len(thetas)})")
 
+    if a.device == "auto":
+        import torch
+        a.device = "cuda" if torch.cuda.is_available() else "cpu"
+    print("[device]", a.device)
     ev = Evaluator(load_model(a.checkpoint, a.encoder, a.n_classes, a.arch), imgs, a.n_classes,
-                   a.batch, "cpu", a.threads)
+                   a.batch, a.device, a.threads)
 
     # 1) 표본마다 전 클래스 IoU (끊겨도 이어가기)
     prog = out / "samples_all_classes.csv"
