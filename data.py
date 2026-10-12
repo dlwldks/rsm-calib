@@ -81,8 +81,19 @@ def channel_stats(imgs):
 
 # ---------------------------------------------------------------- model
 def load_model(ckpt, encoder="resnet34", n_classes=15, arch="Unet"):
-    import segmentation_models_pytorch as smp
     import torch
+    if arch.lower() == "aihub":
+        # AI-HUB 토지피복 U-Net (Pytorch-UNet-LS22, milesial 구조). 소스는 레포에 넣지 않고
+        # AIHUB_UNET_SRC 경로(그 안에 unet/ 폴더)에서 불러온다. 기본: models/aihub/src
+        import os
+        import sys
+        sys.path.insert(0, os.environ.get("AIHUB_UNET_SRC", os.path.join("models", "aihub", "src")))
+        from unet import UNet
+        model = UNet(n_channels=3, n_classes=n_classes, bilinear=True)
+        model.load_state_dict(torch.load(ckpt, map_location="cpu"))
+        print(f"[model] AI-HUB U-Net, 클래스 {n_classes}개")
+        return model.eval()
+    import segmentation_models_pytorch as smp
 
     model = getattr(smp, arch)(encoder_name=encoder, encoder_weights=None,
                                 in_channels=3, classes=n_classes)
