@@ -6,6 +6,8 @@ REM   B = A + move to in-box surface max when stationary point is a saddle (--mo
 REM Start: paper Table 8 theta_D004,base. Tiles: D004 paper 50.
 REM Run from C:\rsm_calib :  scripts\laptop_e4_seeds.bat
 set PYTHONUTF8=1
+set PY=python
+if exist .venv\Scripts\python.exe set PY=.venv\Scripts\python.exe
 set F=D:\flair1_hf\extracted\train\D004_2021
 set COM=--img-dir %F%\aerial --msk-dir %F%\labels --tiles docs\paper_tiles\e4_d004_tiles50.txt --checkpoint models\rgb15\FLAIR-INC_rgb_15cl_resnet34-unet_weights.pth --n-classes 19 --label-map labelmap_19.json --targets 5 --base-mode given --theta0 87.32 96.64 90.50 46.47 38.61 33.39
 set SRCH=--paper-mode --calib-tiles all --adj0 0.1 --eps-stop -1000 --max-evals 125
@@ -25,20 +27,20 @@ git commit -m "E4 seed repeat A/R/B 125 evals (laptop)"
 git pull --rebase
 git push
 echo DONE
-pause
+if not defined NOPAUSE pause
 exit /b 0
 
 :A
 echo === E4-A seed %1
-python run.py calibrate %COM% %SRCH% --seed %1 --out out_e4_A_seed%1_n125
+%PY% run.py calibrate %COM% %SRCH% --seed %1 --out out_e4_A_seed%1_n125
 exit /b 0
 
 :R
 echo === E4-R seed %1
-python run.py broad %COM% --calib-tiles all --adjs 0.1 --n-broad 125 --seed %1 --out out_e4_R_seed%1_n125
+%PY% run.py broad %COM% --calib-tiles all --adjs 0.1 --n-broad 125 --seed %1 --out out_e4_R_seed%1_n125
 exit /b 0
 
 :B
 echo === E4-B seed %1
-python run.py calibrate %COM% %SRCH% --move boxmax --seed %1 --out out_e4_B_seed%1_n125
+%PY% run.py calibrate %COM% %SRCH% --move boxmax --seed %1 --out out_e4_B_seed%1_n125
 exit /b 0
