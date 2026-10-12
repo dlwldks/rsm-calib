@@ -42,6 +42,7 @@ IoU는 대상 클래스(E1·E2·E4·E5 침엽수, E3 가로수) IoU(%). 직접 �
 | `labelmap_aihub_e1.json` | AI-HUB 코드 → FLAIR 인덱스 (논문 Table 4의 E1 5개 클래스) |
 | `scripts/laptop_e5_transfer_mitb5.bat` | E5 논문 θ 적용, E4·E5 비율 전이, MiT-B5 적용 (탐색 없음) |
 | `scripts/laptop_e4_seeds.bat` | E4 seed 반복 A/R/B × seed 0·1·2, 각 125회 |
+| `scripts/laptop_e5_seeds.bat` | E5 seed 반복 A(seed 1·2) / R(seed 0·1·2), 각 125회 |
 | `analysis/order_compare.py` | trials csv로 1~4차 반응면 모델 비교 (추론 불필요) |
 | `analysis/order_by_n.py` | 관측 수(35~125)별 1차·2차 LOO 비교 (추론 불필요) |
 | `analysis/solver_compare.py` | 계수 추정 방법 5가지 비교 (추론 불필요) |
