@@ -47,7 +47,7 @@ def build_lut(label_map_path, n_classes):
     """원본 마스크 값 -> 모델 클래스 인덱스. 매핑 없는 값은 IGNORE."""
     lut = np.full(256, IGNORE, np.uint8)
     if label_map_path:
-        for k, v in json.load(open(label_map_path)).items():
+        for k, v in json.load(open(label_map_path, encoding="utf-8")).items():
             if not k.startswith("_"):
                 lut[int(k)] = IGNORE if v is None else int(v)
     else:  # 기본값: 1..n -> 0..n-1  (반드시 모델 카드와 대조할 것)
