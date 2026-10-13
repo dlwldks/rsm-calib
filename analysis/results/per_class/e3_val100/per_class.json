@@ -1,0 +1,531 @@
+{
+  "theta0": [
+    123.675,
+    116.28,
+    103.53,
+    58.395,
+    57.12,
+    57.375
+  ],
+  "n_samples": 61,
+  "summary": [
+    {
+      "cls": 4,
+      "name": "street_tree",
+      "n": 61,
+      "base": 80.85508653892313,
+      "best_obs": 81.04472569744502,
+      "best_obs_idx": 43,
+      "r2": 0.9476258726820534,
+      "adj_r2": 0.9047743139673698,
+      "p_value": 2.3525627060921204e-14,
+      "loo": 11.637302020055836,
+      "loo_mean_only": 21.065895126741964,
+      "stationary": "saddle",
+      "stationary_theta": [
+        120.09,
+        112.33,
+        101.1,
+        55.75,
+        57.22,
+        59.41
+      ],
+      "boxmax_theta": [
+        135.69,
+        127.64,
+        113.78,
+        52.56,
+        62.71,
+        55.86
+      ],
+      "boxmax_how": "bounded-saddle",
+      "boxmax_pred": 127.06731762223704,
+      "best_obs_theta": [
+        125.32,
+        117.67,
+        106.25,
+        54.97,
+        55.75,
+        61.17
+      ],
+      "boxmax_actual": 61.873118207521195,
+      "boxmax_actual_all": {
+        "street_tree": 61.873118207521195,
+        "deciduous": 60.00484310054593,
+        "coniferous": 7.514260396396717,
+        "building": 77.36456655241503,
+        "road": 91.2676175606658,
+        "water": 54.80920971864154
+      }
+    },
+    {
+      "cls": 8,
+      "name": "deciduous",
+      "n": 61,
+      "base": 92.2850254700927,
+      "best_obs": 92.5291182035672,
+      "best_obs_idx": 33,
+      "r2": 0.9181996555951357,
+      "adj_r2": 0.851272101082065,
+      "p_value": 2.5481684523900975e-11,
+      "loo": 16.20470069655691,
+      "loo_mean_only": 24.145483837210314,
+      "stationary": "saddle",
+      "stationary_theta": [
+        124.22,
+        115.25,
+        101.16,
+        57.95,
+        58.98,
+        58.32
+      ],
+      "boxmax_theta": [
+        111.57,
+        104.76,
+        93.27,
+        59.1,
+        51.56,
+        62.97
+      ],
+      "boxmax_how": "bounded-saddle",
+      "boxmax_pred": 128.86250535619558,
+      "best_obs_theta": [
+        113.65,
+        106.74,
+        94.9,
+        57.15,
+        54.55,
+        53.68
+      ],
+      "boxmax_actual": 81.23856565187899,
+      "boxmax_actual_all": {
+        "street_tree": 62.31206048791268,
+        "deciduous": 81.23856565187899,
+        "coniferous": 71.10113897408571,
+        "building": 63.4792750413652,
+        "road": 84.47430141131194,
+        "water": 80.97944568209368
+      }
+    },
+    {
+      "cls": 9,
+      "name": "coniferous",
+      "n": 61,
+      "base": 93.11581919691707,
+      "best_obs": 93.60239420395948,
+      "best_obs_idx": 33,
+      "r2": 0.8283257158218627,
+      "adj_r2": 0.687864937857932,
+      "p_value": 1.5808510696232532e-06,
+      "loo": 29.01521966296908,
+      "loo_mean_only": 30.950350671210522,
+      "stationary": "saddle",
+      "stationary_theta": [
+        125.38,
+        116.46,
+        102.9,
+        58.79,
+        58.3,
+        57.58
+      ],
+      "boxmax_theta": [
+        111.57,
+        104.76,
+        93.19,
+        64.22,
+        51.56,
+        62.97
+      ],
+      "boxmax_how": "bounded-saddle",
+      "boxmax_pred": 207.158369143788,
+      "best_obs_theta": [
+        113.65,
+        106.74,
+        94.9,
+        57.15,
+        54.55,
+        53.68
+      ],
+      "boxmax_actual": 57.6243492011873,
+      "boxmax_actual_all": {
+        "street_tree": 51.15183597950534,
+        "deciduous": 73.54249285042091,
+        "coniferous": 57.6243492011873,
+        "building": 55.82669319244585,
+        "road": 81.52577421964676,
+        "water": 71.4791462885552
+      }
+    },
+    {
+      "cls": 1,
+      "name": "building",
+      "n": 61,
+      "base": 93.08377076753992,
+      "best_obs": 93.08377076753992,
+      "best_obs_idx": 0,
+      "r2": 0.943137911383378,
+      "adj_r2": 0.8966143843334146,
+      "p_value": 8.640229969364932e-14,
+      "loo": 9.810886069591504,
+      "loo_mean_only": 18.511566623584095,
+      "stationary": "saddle",
+      "stationary_theta": [
+        140.41,
+        134.06,
+        120.98,
+        98.24,
+        83.29,
+        75.26
+      ],
+      "boxmax_theta": [
+        135.69,
+        125.48,
+        113.78,
+        52.56,
+        62.71,
+        60.2
+      ],
+      "boxmax_how": "bounded-saddle",
+      "boxmax_pred": 119.17563337180917,
+      "best_obs_theta": [
+        123.68,
+        116.28,
+        103.53,
+        58.4,
+        57.12,
+        57.38
+      ],
+      "boxmax_actual": 88.63719885353689,
+      "boxmax_actual_all": {
+        "street_tree": 73.59670627799522,
+        "deciduous": 66.66618070191194,
+        "coniferous": 10.784832883149477,
+        "building": 88.63719885353689,
+        "road": 92.58912681280384,
+        "water": 48.84733450317405
+      }
+    },
+    {
+      "cls": 3,
+      "name": "road",
+      "n": 61,
+      "base": 95.2065500873762,
+      "best_obs": 95.26281971891515,
+      "best_obs_idx": 33,
+      "r2": 0.9713311022283388,
+      "adj_r2": 0.9478747313242525,
+      "p_value": 1.5113127522789804e-18,
+      "loo": 5.518189169788101,
+      "loo_mean_only": 16.32224785161729,
+      "stationary": "saddle",
+      "stationary_theta": [
+        121.65,
+        115.68,
+        101.05,
+        62.2,
+        51.86,
+        51.27
+      ],
+      "boxmax_theta": [
+        128.08,
+        127.64,
+        111.09,
+        52.56,
+        51.56,
+        62.97
+      ],
+      "boxmax_how": "bounded-saddle",
+      "boxmax_pred": 109.077980268393,
+      "best_obs_theta": [
+        113.65,
+        106.74,
+        94.9,
+        57.15,
+        54.55,
+        53.68
+      ],
+      "boxmax_actual": 92.29904540527835,
+      "boxmax_actual_all": {
+        "street_tree": 47.38903317604185,
+        "deciduous": 55.38815230149648,
+        "coniferous": 12.805857290461391,
+        "building": 73.28190531942515,
+        "road": 92.29904540527835,
+        "water": 68.0988587322218
+      }
+    },
+    {
+      "cls": 11,
+      "name": "water",
+      "n": 61,
+      "base": 94.19975795510427,
+      "best_obs": 94.42096069461628,
+      "best_obs_idx": 33,
+      "r2": 0.9185586716902496,
+      "adj_r2": 0.8519248576186357,
+      "p_value": 2.3806316674948722e-11,
+      "loo": 12.898304379809993,
+      "loo_mean_only": 21.135000198119265,
+      "stationary": "saddle",
+      "stationary_theta": [
+        31.32,
+        146.52,
+        184.0,
+        -16.94,
+        -0.02,
+        158.52
+      ],
+      "boxmax_theta": [
+        135.6,
+        127.64,
+        113.78,
+        52.56,
+        62.71,
+        51.81
+      ],
+      "boxmax_how": "bounded-saddle",
+      "boxmax_pred": 129.72532374653747,
+      "best_obs_theta": [
+        113.65,
+        106.74,
+        94.9,
+        57.15,
+        54.55,
+        53.68
+      ],
+      "boxmax_actual": 52.977272202167214,
+      "boxmax_actual_all": {
+        "street_tree": 48.30076521123229,
+        "deciduous": 51.203914496789395,
+        "coniferous": 0.6629905762059801,
+        "building": 69.12249861755124,
+        "road": 87.71852388150067,
+        "water": 52.977272202167214
+      }
+    }
+  ],
+  "overlap": [
+    {
+      "pair": "street_tree-deciduous",
+      "px_c1": 486971,
+      "px_c2": 1209643,
+      "overlap_px": 0,
+      "overlap_pct_of_c1": 0.0,
+      "overlap_pct_of_c2": 0.0,
+      "overlap_gt": {
+        "street_tree": 0,
+        "deciduous": 0
+      }
+    },
+    {
+      "pair": "street_tree-coniferous",
+      "px_c1": 486971,
+      "px_c2": 451392,
+      "overlap_px": 0,
+      "overlap_pct_of_c1": 0.0,
+      "overlap_pct_of_c2": 0.0,
+      "overlap_gt": {
+        "street_tree": 0,
+        "coniferous": 0
+      }
+    },
+    {
+      "pair": "street_tree-building",
+      "px_c1": 486971,
+      "px_c2": 2504591,
+      "overlap_px": 0,
+      "overlap_pct_of_c1": 0.0,
+      "overlap_pct_of_c2": 0.0,
+      "overlap_gt": {
+        "street_tree": 0,
+        "building": 0
+      }
+    },
+    {
+      "pair": "street_tree-road",
+      "px_c1": 486971,
+      "px_c2": 1838706,
+      "overlap_px": 583,
+      "overlap_pct_of_c1": 0.11971965476383604,
+      "overlap_pct_of_c2": 0.03170708095802156,
+      "overlap_gt": {
+        "street_tree": 283,
+        "road": 203
+      }
+    },
+    {
+      "pair": "street_tree-water",
+      "px_c1": 486971,
+      "px_c2": 832806,
+      "overlap_px": 0,
+      "overlap_pct_of_c1": 0.0,
+      "overlap_pct_of_c2": 0.0,
+      "overlap_gt": {
+        "street_tree": 0,
+        "water": 0
+      }
+    },
+    {
+      "pair": "deciduous-coniferous",
+      "px_c1": 1209643,
+      "px_c2": 451392,
+      "overlap_px": 0,
+      "overlap_pct_of_c1": 0.0,
+      "overlap_pct_of_c2": 0.0,
+      "overlap_gt": {
+        "deciduous": 0,
+        "coniferous": 0
+      }
+    },
+    {
+      "pair": "deciduous-building",
+      "px_c1": 1209643,
+      "px_c2": 2504591,
+      "overlap_px": 15,
+      "overlap_pct_of_c1": 0.0012400352831372563,
+      "overlap_pct_of_c2": 0.0005989001797099806,
+      "overlap_gt": {
+        "deciduous": 0,
+        "building": 15
+      }
+    },
+    {
+      "pair": "deciduous-road",
+      "px_c1": 1209643,
+      "px_c2": 1838706,
+      "overlap_px": 0,
+      "overlap_pct_of_c1": 0.0,
+      "overlap_pct_of_c2": 0.0,
+      "overlap_gt": {
+        "deciduous": 0,
+        "road": 0
+      }
+    },
+    {
+      "pair": "deciduous-water",
+      "px_c1": 1209643,
+      "px_c2": 832806,
+      "overlap_px": 0,
+      "overlap_pct_of_c1": 0.0,
+      "overlap_pct_of_c2": 0.0,
+      "overlap_gt": {
+        "deciduous": 0,
+        "water": 0
+      }
+    },
+    {
+      "pair": "coniferous-building",
+      "px_c1": 451392,
+      "px_c2": 2504591,
+      "overlap_px": 43,
+      "overlap_pct_of_c1": 0.009526088189422941,
+      "overlap_pct_of_c2": 0.0017168471818352776,
+      "overlap_gt": {
+        "coniferous": 0,
+        "building": 29
+      }
+    },
+    {
+      "pair": "coniferous-road",
+      "px_c1": 451392,
+      "px_c2": 1838706,
+      "overlap_px": 0,
+      "overlap_pct_of_c1": 0.0,
+      "overlap_pct_of_c2": 0.0,
+      "overlap_gt": {
+        "coniferous": 0,
+        "road": 0
+      }
+    },
+    {
+      "pair": "coniferous-water",
+      "px_c1": 451392,
+      "px_c2": 832806,
+      "overlap_px": 0,
+      "overlap_pct_of_c1": 0.0,
+      "overlap_pct_of_c2": 0.0,
+      "overlap_gt": {
+        "coniferous": 0,
+        "water": 0
+      }
+    },
+    {
+      "pair": "building-road",
+      "px_c1": 2504591,
+      "px_c2": 1838706,
+      "overlap_px": 10,
+      "overlap_pct_of_c1": 0.0003992667864733204,
+      "overlap_pct_of_c2": 0.0005438607368442808,
+      "overlap_gt": {
+        "building": 10,
+        "road": 0
+      }
+    },
+    {
+      "pair": "building-water",
+      "px_c1": 2504591,
+      "px_c2": 832806,
+      "overlap_px": 0,
+      "overlap_pct_of_c1": 0.0,
+      "overlap_pct_of_c2": 0.0,
+      "overlap_gt": {
+        "building": 0,
+        "water": 0
+      }
+    },
+    {
+      "pair": "road-water",
+      "px_c1": 1838706,
+      "px_c2": 832806,
+      "overlap_px": 0,
+      "overlap_pct_of_c1": 0.0,
+      "overlap_pct_of_c2": 0.0,
+      "overlap_gt": {
+        "road": 0,
+        "water": 0
+      }
+    }
+  ],
+  "fusion": {
+    "order_low_to_high": [
+      "building",
+      "road",
+      "street_tree",
+      "water",
+      "deciduous",
+      "coniferous"
+    ],
+    "delta": {
+      "street_tree": 0.18963915852188507,
+      "deciduous": 0.24409273347450267,
+      "coniferous": 0.48657500704239,
+      "building": 0.0,
+      "road": 0.05626963153898146,
+      "water": 0.22120273951200886
+    },
+    "base": {
+      "street_tree": 80.85508653892313,
+      "deciduous": 92.2850254700927,
+      "coniferous": 93.11581919691709,
+      "building": 93.08377076753993,
+      "road": 95.20655008737619,
+      "water": 94.19975795510427
+    },
+    "own_theta": {
+      "street_tree": 81.04472569744502,
+      "deciduous": 92.52911820356721,
+      "coniferous": 93.60239420395948,
+      "building": 93.08377076753993,
+      "road": 95.26281971891517,
+      "water": 94.42096069461628
+    },
+    "fused": {
+      "street_tree": 80.60756096938496,
+      "deciduous": 92.24480440707988,
+      "coniferous": 93.10942383846682,
+      "building": 93.08220572690742,
+      "road": 95.24211836663095,
+      "water": 94.20718526923608
+    }
+  }
+}
