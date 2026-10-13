@@ -1,0 +1,8 @@
+setting,OA,kappa,mIoU
+base,63.31,55.97,59.01
+best_coniferous,83.23,78.52,76.25
+best_deciduous,81.9,77.09,75.53
+best_building,82.97,78.3,76.31
+best_water,63.75,56.46,59.68
+best_greenhouse,82.97,78.3,76.31
+fusion,85.4,81.2,78.61
