@@ -1,0 +1,9 @@
+setting,OA,kappa,mIoU
+base,96.73,95.59,92.46
+best_street_tree,95.77,94.3,90.37
+best_deciduous,96.65,95.47,92.36
+best_coniferous,96.65,95.47,92.36
+best_building,96.73,95.59,92.46
+best_road,96.65,95.47,92.36
+best_water,96.65,95.47,92.36
+fusion,96.72,95.57,92.44

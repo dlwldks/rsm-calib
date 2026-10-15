@@ -1,0 +1,4 @@
+setting,OA,kappa,mIoU
+base,78.3,74.16,58.96
+best_coniferous,85.45,82.47,68.33
+fusion,78.97,74.99,59.77
