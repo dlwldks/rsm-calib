@@ -1,5 +1,17 @@
 # rsm_calib — 학습 없는 채널 캘리브레이션 재현 코드
 
+## Portfolio overview
+
+Training-free RGB normalization calibration for semantic segmentation: frozen weights, six channel statistics, response-surface fitting and candidate evaluation. This repository reproduces Moon & Cho (2026); it is not authorship of that paper.
+
+Distinguish observed candidate maxima from fitted optima, class IoU from mIoU, and calibration-set results from independent evaluation. No new experiment was run for this documentation update.
+
+```mermaid
+flowchart LR
+ A[RGB tiles] --> B[Candidate mean and std] --> C[Frozen segmentation model] --> D[IoU evaluation] --> E[Candidate comparison]
+```
+
+
 Moon & Cho (2026), "Training-Free Lightweight Transfer Learning for Land Cover Segmentation Using Multispectral Calibration", *Remote Sensing* 18(2):205 재현용 (논문 PDF: `remotesensing-18-00205-v2.pdf`).
 모델 가중치는 고정하고, 입력 정규화 값 6개(R·G·B 평균, R·G·B 표준편차 = θ)를 반응표면법(RSM)으로 찾는다.
 
